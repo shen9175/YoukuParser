@@ -241,6 +241,14 @@ void YoukuWindow::OnCheckListNotify(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM 
 			break;
 	}
 }
+
+void YoukuWindow::OnUserDefined(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
+	if (lParam) {
+		ShowWindow(GetDlgItem(hwnd, ID_CONSOLE), SW_HIDE);
+		ShowWindow(GetDlgItem(hwnd, ID_LISTCHECKBOX), SW_SHOW);
+	}
+}
+
 void YoukuWindow::OnGoButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	ShowWindow(GetDlgItem(hwnd, ID_CONSOLE), SW_SHOW);
 	ShowWindow(GetDlgItem(hwnd, ID_LISTCHECKBOX), SW_HIDE);
@@ -254,79 +262,47 @@ void YoukuWindow::OnGoButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM 
 	SendMessage(hwndEdit, EM_GETLINE, 0, reinterpret_cast<LPARAM>(&URL[0]));
 	HWND hwndresult = GetDlgItem(hwnd, ID_RESULT);
 	SetWindowText(hwndresult, &URL[0]);
-	
-	params.hwnd = hwnd;
-	params.pURL = &URL;
-	params.pvideolist = &videolist;
-	params.pYouku = pYouku;
-	params.pchecklist = pchecklist;
-	params.pYoukuWin = this;
-	_beginthread(ParseThread, 0, &params);
-	//pconsole->clearConsole();
-	//thread thread1(&YoukuWindow::ParseThread, this);
-	//_beginthread(&YoukuWindow::ParseThread, 0, nullptr);
+	thread parse_thread(&YoukuWindow::ParseThread, this);
+	parse_thread.detach();
+}
+void YoukuWindow::ParseThread() {
+	mtx.lock();
+	videolist.clear();
+	pchecklist->ClearListViewItem();
+	if (pYouku->parse(URL, videolist)) {
+		PopulateCheckList(videolist);
+		SendMessage(hwnd, WM_USER, 0, true);
+	} else {
+		SendMessage(hwnd, WM_USER, 0, false);
+	}
+	mtx.unlock();
 }
 
 void YoukuWindow::OnOKButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	ShowWindow(GetDlgItem(hwnd, ID_CONSOLE), SW_SHOW);
 	ShowWindow(GetDlgItem(hwnd, ID_LISTCHECKBOX), SW_HIDE);
-	for (int i = 0; i < videolist.size(); ++i) {
+	for (size_t i = 0; i < videolist.size(); ++i) {
 		if (videolist[i].bChecked) {
-			params.hwnd = hwnd;
-			params.pURL = &(videolist[i].url);
-			params.pvideolist = &videolist;
-			params.index = i;
-			params.pYouku = pYouku;
-			params.pchecklist = pchecklist;
-			params.pYoukuWin = this;
-			_beginthread(m3u8Thread, 0, &params);
-			//pconsole->clearConsole();
+			thread m3u8thread(&YoukuWindow::m3u8Thread, this, videolist[i].url, i);
+				m3u8thread.detach();
 		}
 	}
 }
-void ParseThread(PVOID pvoid) {
-	PARAMS* pparams;
-	pparams = reinterpret_cast<PARAMS*>(pvoid);
 
-
-	EnterCriticalSection(&cs);
-	pparams->pvideolist->clear();
-	pparams->pchecklist->ClearListViewItem();
-	
-	if (pparams->pYouku->parse(*pparams->pURL, *pparams->pvideolist)) {
-		pparams->pYoukuWin->PopulateCheckList(*pparams->pvideolist);
-		SendMessage(pparams->hwnd, WM_USER, 0, true);
-	} else {
-		SendMessage(pparams->hwnd, WM_USER, 0, false);
-	}
-	LeaveCriticalSection(&cs);
-	_endthread();
-}
-
-void YoukuWindow::OnUserDefined(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
-	if (lParam) {
-		ShowWindow(GetDlgItem(hwnd, ID_CONSOLE), SW_HIDE);
-		ShowWindow(GetDlgItem(hwnd, ID_LISTCHECKBOX), SW_SHOW);
-	}
-}
-
-void m3u8Thread(PVOID pvoid) {
-	PARAMS* pparams;
-	pparams = reinterpret_cast<PARAMS*>(pvoid);
-	EnterCriticalSection(&cs);
-
-	tstring vid = getVid(*pparams->pURL);
+void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
+	mtx.lock();
+	tstring vid = getVid(videoURL);
 	tstring JSONurl = getJSONUrl(vid);
-	ConsoleStream* pconsole = &pparams->pYoukuWin->GetConsoleHandle();
 	httpclient hc(*pconsole);
 	//tstring cookie = hc.RetrievingHTTPHeaders()
-	tstring htmlsetcookie = pparams->pYoukuWin->GetHtmlCookie();
+	tstring htmlsetcookie = htmlcookie;
 	*pconsole << TEXT("htmlSetCookie = ") << htmlsetcookie << endl;
-	tstring setcookie = hc.GetSetCookie(*pparams->pURL);
+	tstring setcookie = hc.GetSetCookie(videoURL);
 	*pconsole << TEXT("SetCookie = ") << setcookie << endl;
-	tstring cookie = TEXT("Cookie: ") /*+ htmlsetcookie + TEXT(",")*/ + setcookie + TEXT(" __ysuid=") + GetPvid(6) + TEXT("\r\n") + TEXT("Referer: ") + *pparams->pURL +TEXT("\r\n");
+	//tstring cookie = TEXT("Cookie: ") /*+ htmlsetcookie + TEXT(",")*/ + setcookie + TEXT(" __ysuid=") + GetPvid(6) + TEXT("\r\n") + TEXT("Referer: ") + videoURL + TEXT("\r\n");
+	tstring cookie = TEXT("Cookie: ") + htmlsetcookie + TEXT(" __ysuid=") + GetPvid(6) + TEXT("\r\n") + TEXT("Referer: ") + videoURL + TEXT("\r\n");
 	*pconsole << TEXT("Combined Cookie = ") << cookie << endl;
-	tstring referer = *pparams->pURL;
+	tstring referer = videoURL;
 	tstring JSON;
 	*pconsole << endl << TEXT("Downloading JSON file...") << endl;
 	if (hc.GetJson(JSONurl, JSON, referer, cookie)) {
@@ -370,20 +346,25 @@ void m3u8Thread(PVOID pvoid) {
 		*pconsole << endl << TEXT("Finished downloading video file true downloading links container: m3u8 file.") << endl;
 		*pconsole << endl << TEXT("The content of m3u8 file is:") << endl;
 		*pconsole << m3u8file << endl;
-		
+
 		*pconsole << endl << TEXT("Parsing m3u8 file...") << endl;
 
 
 		DownloadFactors videolinks;
-		videolinks.filename = (*pparams->pvideolist)[pparams->index].name;
+		videolinks.filename = videolist[index].name;
 
 
 		M3U8Parser(m3u8file, videolinks);
 		*pconsole << endl << TEXT("Finish parsing m3u8 file!") << endl;
+		if (videolinks.links.empty()) {
+			mtx.unlock();
+			*pconsole << endl << TEXT("No video file parsed out!") << endl;
+			return;
+		}
 		*pconsole << endl << TEXT("Final true video downloading links are:") << endl << endl;
 
 		*pconsole << TEXT("video name: ") << videolinks.filename << endl << endl;
-		
+
 		for (auto item : videolinks.order) {
 			*pconsole << TEXT("video components filename: ") << endl << item << endl;
 			if (videolinks.links.find(item) != videolinks.links.cend()) {
@@ -395,7 +376,7 @@ void m3u8Thread(PVOID pvoid) {
 				*pconsole << TEXT("error: there is no download link for ") << item << endl;
 			}
 		}
-		tstring originalpath = pparams->pYoukuWin->GetDownloadPath();
+		tstring originalpath = DownloadPath;
 		if (originalpath.back() == TEXT('\0')) {
 			originalpath.pop_back();
 		}
@@ -411,22 +392,23 @@ void m3u8Thread(PVOID pvoid) {
 			for (auto item : videolinks.order) {
 				if (videolinks.links.find(item) != videolinks.links.cend()) {
 					auto link = videolinks.links.at(item)[0];
-					//for (auto link : videolinks.links.at(item)) {
-						string videobuffer;
-						hc.GetVideo(link, videobuffer);
-						//whole.append(videobuffer);
-						videofilelist.push_back(videobuffer);
-						ofstream out;
-						tstring finalname = finalpath + TEXT("\\") + item;
-						*pconsole << TEXT("Final name = ") << finalname << endl;
-						out.open(finalname.c_str(), ofstream::binary);
-						if (!out.fail()) {
-							out << videobuffer;
-							out.close();
-						} else {
-							*pconsole << TEXT("create/open file failed!") << endl;
-							out.close();
-						}
+					string videobuffer;
+					if (!hc.GetVideo(link, videobuffer)) {
+						mtx.unlock();
+						return;
+					}
+					videofilelist.push_back(videobuffer);
+					ofstream out;
+					tstring finalname = finalpath + TEXT("\\") + item;
+					*pconsole << TEXT("Final name = ") << finalname << endl;
+					out.open(finalname.c_str(), ofstream::binary);
+					if (!out.fail()) {
+						out << videobuffer;
+						out.close();
+					} else {
+						*pconsole << TEXT("create/open file failed!") << endl;
+						out.close();
+					}
 					//}
 
 				} else {
@@ -448,9 +430,7 @@ void m3u8Thread(PVOID pvoid) {
 
 		}
 	}
-
-	LeaveCriticalSection(&cs);
-	_endthread();
+	mtx.unlock();
 }
 
 void YoukuWindow::PopulateCheckList(const vector<VideoList>& videolist) {

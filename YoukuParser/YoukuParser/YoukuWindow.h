@@ -26,18 +26,7 @@ public:
 	bool GetCheckState(const int& i);
 	bool Update(const int& i);
 };
-class YoukuWindow;
-struct PARAMS {
-	HWND hwnd;
-	tstring* pURL;
-	vector<VideoList>* pvideolist;
-	size_t index;
-	YoukuParser* pYouku;
-	CheckList* pchecklist;
-	YoukuWindow* pYoukuWin;
-};
-void ParseThread(PVOID pvoid);
-void m3u8Thread(PVOID pvoid);
+
 class YoukuWindow : public CWnd{
 public:
 	YoukuWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow, YoukuParser* p);
@@ -55,10 +44,10 @@ public:
 	void OnUserDefined(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void PopulateCheckList(const vector<VideoList>& videolist);
 	ConsoleStream& GetConsoleHandle() { return *pconsole; }
-	const tstring& GetURL() { return URL; }
+	//const tstring& GetURL() { return URL; }
 	void SetHtmlCookie(const tstring& cookie) { htmlcookie = cookie; }
-	const tstring& GetHtmlCookie() { return htmlcookie; }
-	const tstring& GetDownloadPath() { return DownloadPath; }
+	//const tstring& GetHtmlCookie() { return htmlcookie; }
+	//const tstring& GetDownloadPath() { return DownloadPath; }
 private:
 	void OnGoButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void OnClearButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
@@ -68,6 +57,8 @@ private:
 	void OnOKButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void OnSelectFolderButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void OnConsoleNotification(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
+	void ParseThread();
+	void m3u8Thread(const tstring& videoURL, size_t index);
 	vector<VideoList> videolist;
 	tstring URL;
 	tstring htmlcookie;
@@ -87,9 +78,7 @@ private:
 	CStaticCtrl* pPathTitle;
 	CheckList* pchecklist;
 	ConsoleStream* pconsole;
-	PARAMS params;
 	HGLOBAL hEditDS;
-	
-
+	mutex mtx;
 };
 

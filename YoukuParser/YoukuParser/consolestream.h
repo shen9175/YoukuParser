@@ -9,11 +9,10 @@ class ConsoleStream {
 public:
 	ConsoleStream(const HWND& hwnd) : display(hwnd) {}
 	~ConsoleStream();
-	void clearConsole() { output.str(tstring()); }
+	//void clearConsole() { output.str(tstring()); }
 private:
 	HWND display;
-	tstringstream output;
-	tstring tempnumber;
+	//tstringstream output;
 	vector<tstring*> numbers;
 };
 

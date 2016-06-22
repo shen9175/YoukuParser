@@ -9,7 +9,7 @@ ConsoleStream::~ConsoleStream() {
 }
  ConsoleStream& operator<<(ConsoleStream& os, const tstring& text) {
 	 //tstring output = os.output.str();
-	 os.output << text;
+	 //os.output << text;
 	 size_t ndx = GetWindowTextLength(os.display);
 	 SetFocus(os.display);
 	 SendMessage(os.display, EM_SETSEL, static_cast<WPARAM>(ndx), static_cast<LPARAM>(ndx));//put the cursor in the end
@@ -25,7 +25,7 @@ ConsoleStream::~ConsoleStream() {
 	 return os;
 }
  ConsoleStream& operator<<(ConsoleStream& os, const int& number) {
-	 os.output << number;
+	 //os.output << number;
 	 tstring* temp = new tstring(to_tstring(number));
 	 os.numbers.push_back(temp);
 	 size_t ndx = GetWindowTextLength(os.display);
@@ -45,7 +45,7 @@ ConsoleStream::~ConsoleStream() {
  //see this: http://stackoverflow.com/questions/1134388/stdendl-is-of-unknown-type-when-overloading-operator
 
  ConsoleStream& operator<<(ConsoleStream& os, tostream& (*endline)(tostream&)) {
-	 os.output << '\r' <<endline; //need \r\n to get a new line in edit control. endl only have \n
+	// os.output << '\r' <<endline; //need \r\n to get a new line in edit control. endl only have \n
 	 size_t ndx = GetWindowTextLength(os.display);
 	 SetFocus(os.display);
 	 SendMessage(os.display, EM_SETSEL, static_cast<WPARAM>(ndx), static_cast<LPARAM>(ndx));//put the cursor in the end
@@ -72,14 +72,15 @@ ConsoleStream::~ConsoleStream() {
 	 return os;
  }
  ConsoleStream& operator||(ConsoleStream& os, const int& number) {
-	 os.tempnumber = to_tstring(number);
+	 tstring* temp = new tstring(to_tstring(number));
+	 os.numbers.push_back(temp);
 	 int start = static_cast<int>(SendMessage(os.display, EM_LINEINDEX, -1, 0));
 	 int length = static_cast<int>(SendMessage(os.display, EM_LINELENGTH, start, 0));
 	 int end = start + length;
 	 SendMessage(os.display, EM_SETSEL, end, end);
 	// int idx = GetWindowTextLength(os.display);
 	// SendMessage(os.display, EM_SETSEL, static_cast<WPARAM>(idx), static_cast<LPARAM>(idx));
-	 SendMessage(os.display, EM_REPLACESEL, 0, reinterpret_cast<LPARAM>(&os.tempnumber[0]));
+	 SendMessage(os.display, EM_REPLACESEL, 0, reinterpret_cast<LPARAM>(&(*temp)[0]));
 	 InvalidateRect(os.display, nullptr, true);
 	 return os;
  }
