@@ -88,6 +88,10 @@ void GetParameters(const tstring& vid, const tstring& encryptString, tstring& si
 
 
 bool M3U8Parser(const tstring& m3u8, DownloadFactors& videolinks) {
+	//  regex:  ^((?!my string).)*$ not contain a string pattern http://stackoverflow.com/questions/717644/regular-expression-that-doesnt-contain-certain-string
+	//															 http://stackoverflow.com/questions/406230/regular-expression-to-match-line-that-doesnt-contain-a-word
+	// regex: AND operator: (?=expr)   (?=.*word1)(?=.*word2)(?=.*word3) http://stackoverflow.com/questions/469913/regular-expressions-is-there-an-and-operator
+	// not contain: 03008001005756AC0E8896000032C87E2BE91A-97F6-1E3B-A634-DDEEE48EB109.flv.ts?ts_start=0.0&ts_end=6.26&ts_seg_no=0&ts_keyframe=1 AND has pattern http://[^\?]+.flv -> http:// + any character not ? + .flv
 	tstring videolink_pattern = TEXT("(http://[^\\?]+\\.flv)\\.ts\\?[^#]+");//non-greedy matching: http://www.regular-expressions.info/repeat.html
 	tregex videolink(videolink_pattern);
 	tsmatch vlinks;
@@ -99,7 +103,7 @@ bool M3U8Parser(const tstring& m3u8, DownloadFactors& videolinks) {
 		tregex filenamefilter(filename_pattern);
 		tsmatch filename;
 		if (regex_search(truevideolink, filename, filenamefilter)) {
-			if (removedupfilename.find(filename.str()) == removedupfilename.cend()) { //no duplicate yet
+			if (removedupfilename.find(filename.str()) == removedupfilename.cend() && filename.str() != TEXT("03008001005756AC0E8896000032C87E2BE91A-97F6-1E3B-A634-DDEEE48EB109.flv")) { //no duplicate yet and not the last youku ad one
 				removedupfilename.insert(filename.str());
 				videolinks.order.push_back(filename.str());
 			}	

@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 
 
 
@@ -19,6 +19,20 @@ YoukuWindow::YoukuWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCm
 		LPCTSTR errMsg = err.ErrorMessage();
 		MessageBox(hwnd, errMsg, TEXT("Get Current Dirctory Failed!"), MB_OK);
 	}
+
+
+	resolution_choice["mp4hd3"] = { TEXT("hd3"),TEXT("全高清1080P") };
+	resolution_choice["hd3"] = { TEXT("hd3"),TEXT("全高清1080P") };
+
+	resolution_choice["mp4hd2"] = { TEXT("hd2"),TEXT("超清") };
+	resolution_choice["hd2"] = { TEXT("hd2"),TEXT("超清") };
+
+	resolution_choice["mp4hd"] = { TEXT("mp4"),TEXT("高清") };
+	resolution_choice["mp4"] = { TEXT("mp4"),TEXT("高清") };
+
+	resolution_choice["flvhd"] = { TEXT("flvhd"),TEXT("标清") };
+	resolution_choice["flv"] = { TEXT("flv"),TEXT("标清") };
+	resolution_choice["3gphd"] = { TEXT("3gphd"),TEXT("标清") };
 }
 YoukuWindow::~YoukuWindow() {
 	if (pEdit) {
@@ -297,8 +311,8 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 	//tstring cookie = hc.RetrievingHTTPHeaders()
 	tstring htmlsetcookie = htmlcookie;
 	*pconsole << TEXT("htmlSetCookie = ") << htmlsetcookie << endl;
-	tstring setcookie = hc.GetSetCookie(videoURL);
-	*pconsole << TEXT("SetCookie = ") << setcookie << endl;
+	//tstring setcookie = hc.GetSetCookie(videoURL);
+	//*pconsole << TEXT("SetCookie = ") << setcookie << endl;
 	//tstring cookie = TEXT("Cookie: ") /*+ htmlsetcookie + TEXT(",")*/ + setcookie + TEXT(" __ysuid=") + GetPvid(6) + TEXT("\r\n") + TEXT("Referer: ") + videoURL + TEXT("\r\n");
 	tstring cookie = TEXT("Cookie: ") + htmlsetcookie + TEXT(" __ysuid=") + GetPvid(6) + TEXT("\r\n") + TEXT("Referer: ") + videoURL + TEXT("\r\n");
 	*pconsole << TEXT("Combined Cookie = ") << cookie << endl;
@@ -313,7 +327,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 		*pconsole << TEXT("Get JSON Failed!") << endl;
 		return;
 	}
-	*pconsole << endl << TEXT("Extracting \"encrypt_string\" and \"ip\" from JSON file...") << endl;
+	
 	string err;
 	string json;
 	tstring m3u8;
@@ -326,6 +340,28 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 	auto data = JSONobj["data"].object_items();
 	auto security = data["security"].object_items();
 	if (!security.empty()) {
+		*pconsole << endl << TEXT("Extracting video resolutions from JSON file...") << endl;
+		auto stream_array = data["stream"].array_items();
+		for (size_t i = 0; i < stream_array.size(); ++i) {
+			auto stream_type = stream_array[i]["stream_type"].string_value();
+			auto height = stream_array[i]["height"].number_value();
+			auto width = stream_array[i]["width"].number_value();
+			if (resolutions.find(static_cast<size_t>(height * width)) == resolutions.cend()) {
+				resolutions[static_cast<size_t>(height * width)] = { stream_type,{ static_cast<size_t>(width), static_cast<size_t>(height)} };
+			} else {
+				//print out ignore resolution and stream type
+				*pconsole << TEXT("Ignore already exsiting resolution: ") << ByteToWide(CP_UTF8, stream_type) << TEXT(": ") << static_cast<int>(width) << TEXT(" x ") << static_cast<int>(height) << TEXT(" ") << resolution_choice.at(stream_type).second << endl;
+			}
+		}
+		*pconsole << endl << TEXT("There are following resolutions in this video:") << endl;
+		for (auto item : resolutions) {
+			*pconsole << TEXT("Stream type: ") << ByteToWide(CP_UTF8, item.second.first) << TEXT(": ") << static_cast<int>(item.second.second.first) << TEXT(" x ") << static_cast<int>(item.second.second.second) << TEXT(" ") << resolution_choice.at(item.second.first).second <<endl;
+		}
+		*pconsole << endl << TEXT("The program automatically choose the highest resolution is:") << endl;
+		*pconsole << TEXT("Stream type: ") << ByteToWide(CP_UTF8, (*resolutions.crbegin()).second.first) << TEXT(": ") << static_cast<int>((*resolutions.crbegin()).second.second.first) << TEXT(" x ") << static_cast<int>((*resolutions.crbegin()).second.second.second) << TEXT(" ") << resolution_choice.at((*resolutions.crbegin()).second.first).second << endl;
+		*pconsole << endl << TEXT("Finishing extracting video resolutions from JSON file!") << endl;
+
+		*pconsole << endl << TEXT("Extracting \"encrypt_string\" and \"ip\" from JSON file...") << endl;
 		tstring ep, token, sid;
 		tstring security_string;
 		tstring ip;
@@ -338,7 +374,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 		GetParameters(vid, security_string, sid, token, ep);
 		*pconsole << TEXT("Finishing decrypting and synthething m3u8 address link...") << endl;
 		*pconsole << TEXT("M3U8 file address link is: ") << endl << endl;
-		m3u8 = TEXT("http://pl.youku.com/playlist/m3u8?vid=") + vid + TEXT("&type=hd3&ts=") + to_tstring(time(nullptr)) + TEXT("&keyframe=1&ep=") + ep + TEXT("&sid=") + sid + TEXT("&token=") + token + TEXT("&ctype=12&ev=1&oip=") + ip;
+		m3u8 = TEXT("http://pl.youku.com/playlist/m3u8?vid=") + vid + TEXT("&type=") + resolution_choice.at((*resolutions.crbegin()).second.first).first +TEXT("&ts=") + to_tstring(time(nullptr)) + TEXT("&keyframe=1&ep=") + ep + TEXT("&sid=") + sid + TEXT("&token=") + token + TEXT("&ctype=12&ev=1&oip=") + ip;
 		*pconsole << m3u8 << endl;
 		*pconsole << endl << TEXT("Getting video file true downloading links container: m3u8 file...") << endl;
 		tstring m3u8file;
@@ -455,7 +491,7 @@ void YoukuWindow::PopulateCheckList(const vector<VideoList>& videolist) {
 }
 void YoukuWindow::OnClearButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	HWND hwndEdit = GetDlgItem(hwnd, ID_EDIT);
-	//If the start is 0 and the end is �C1, all the text in the edit control is selected. If the start is �C1, any current selection is deselected. 
+	//If the start is 0 and the end is ¨C1, all the text in the edit control is selected. If the start is ¨C1, any current selection is deselected. 
 	SendMessage(hwndEdit, EM_SETSEL, 0, -1);
 	SendMessage(hwndEdit, WM_CLEAR, 0, 0);
 	URL = TEXT("");

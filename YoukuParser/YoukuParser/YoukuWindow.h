@@ -59,6 +59,8 @@ private:
 	void OnConsoleNotification(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void ParseThread();
 	void m3u8Thread(const tstring& videoURL, size_t index);
+	map< size_t, pair<string, pair<size_t, size_t>>> resolutions;
+	unordered_map<string, pair<tstring,tstring>> resolution_choice;
 	vector<VideoList> videolist;
 	tstring URL;
 	tstring htmlcookie;

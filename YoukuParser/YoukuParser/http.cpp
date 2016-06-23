@@ -70,7 +70,7 @@ bool httpclient::EstablishConnection(const tstring& url, const tstring& cookie, 
 	
 	tcout << TEXT("InternetSetOption receive timeout ...") << endl;
 	output << TEXT("InternetSetOption receive timeout ...") << endl;
-	DWORD timeout = 3000;
+	DWORD timeout = 300;
 	if (InternetSetOption(hIntSession, INTERNET_OPTION_RECEIVE_TIMEOUT, &timeout, sizeof(timeout))) {
 		tcout << TEXT("InternetSetOption receive timeout passed!") << endl;
 		output << TEXT("InternetSetOption receive timeout passed!") << endl;
@@ -394,9 +394,9 @@ bool httpclient::downloadBINfile(string& file) {
 	do {
 		result = InternetReadFile(/*hURL*/hHttpRequest, Buffer, 1024, &BufferLen);
 		if (!result) {
+			errorcode = GetLastError();
 			tcout << TEXT("InternetReadFile failed!") << endl;
 			output << TEXT("InternetReadFile failed!") << endl;
-			errorcode = GetLastError();
 			InternetErrorOut(output, errorcode, TEXT("InternetReadFile"));
 		} else {
 			file.append(Buffer, BufferLen);
@@ -624,7 +624,7 @@ tstring httpclient::GetSetCookie(const tstring& url) {
 
 	tcout << TEXT("InternetSetOption receive timeout ...") << endl;
 	output << TEXT("InternetSetOption receive timeout ...") << endl;
-	DWORD timeout = 3000;
+	DWORD timeout = 300;
 	if (InternetSetOption(hIntSession, INTERNET_OPTION_RECEIVE_TIMEOUT, &timeout, sizeof(timeout))) {
 		tcout << TEXT("InternetSetOption receive timeout passed!") << endl;
 		output << TEXT("InternetSetOption receive timeout passed!") << endl;
