@@ -430,16 +430,21 @@ bool httpclient::GetHtml(const tstring & url, tstring& html) {
 	return false;
 }
 bool httpclient::GetVideo(const tstring &url, string& video) {
-	if (EstablishConnection(url, tstring(), false, nullptr)) {
-		bool result = downloadBINfile(video);
-		//output << GetCookie(url) << endl;
-		InternetCloseHandle(hHttpRequest);
-		InternetCloseHandle(hHttpSession);
-		InternetCloseHandle(hIntSession);
+	bool result = false;
+	int tries = 20;
+	do {
+		if (EstablishConnection(url, tstring(), false, nullptr)) {
+			result = downloadBINfile(video);
+			InternetCloseHandle(hHttpRequest);
+			InternetCloseHandle(hHttpSession);
+			InternetCloseHandle(hIntSession);
+		}
 		if (result) {
 			return true;
+		} else {
+			--tries;
 		}
-	}
+	} while (tries > 0);
 	return false;
 }
 
