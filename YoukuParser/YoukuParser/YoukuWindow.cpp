@@ -338,6 +338,43 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 #endif
 	auto JSONobj = Json::parse(json, err);
 	auto data = JSONobj["data"].object_items();
+	if (data["stream"].is_null()) {
+		if (!data["error"].is_null()) {
+			if (static_cast<int>(data["error"]["code"].number_value()) == -202) {
+				tstring password;
+				//pop up a password input dialog
+				JSONurl += TEXT("&pwd=") + password;
+				*pconsole << endl << TEXT("New JSON URL with password is:") << endl;
+				*pconsole << JSONurl << endl;
+				*pconsole << endl << TEXT("Downloading JSON again file with password...") << endl;
+				if (hc.GetJson(JSONurl, JSON, referer, cookie)) {
+					*pconsole << endl << TEXT("Finishing downloading JSON file") << endl;
+					*pconsole << TEXT("JSON file content is: ") << endl;
+					*pconsole << JSON << endl;
+#ifdef UNICODE
+					json = WideToByte(CP_UTF8, JSON);
+#else
+					json = JSON;
+#endif
+					JSONobj = Json::parse(json, err);
+					data = JSONobj["data"].object_items();
+					if (data["stream"].is_null()) {
+						*pconsole << TEXT("Failed: Wrong Password!") << endl;
+						return;
+					}
+				} else {
+					*pconsole << TEXT("Get JSON Failed!") << endl;
+					return;
+				}
+			} else {
+				*pconsole << TEXT("Failed: ") << ByteToWide(CP_UTF8, data["error"]["note"].string_value()) << endl;
+				return;
+			}
+		} else {
+			*pconsole << TEXT("Failed: video not found!") << endl;
+			return;
+		}
+	}
 	auto security = data["security"].object_items();
 	if (!security.empty()) {
 		*pconsole << endl << TEXT("Extracting video resolutions from JSON file...") << endl;
