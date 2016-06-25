@@ -255,6 +255,24 @@ void YoukuWindow::OnCheckListNotify(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM 
 			break;
 	}
 }
+bool YoukuWindow::InputPWDDialogPro(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
+	password = TEXT("");
+	switch (iMsg) {
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		case IDOK:
+			if (!GetDlgItemText(hwnd, IDC_EDIT_PWD_INPUT, &password[0], 80))
+				password = TEXT("");
+
+			// Fall through. 
+
+		case IDCANCEL:
+			EndDialog(hwnd, wParam);
+			return true;
+		}
+	}
+	return false;
+}
 
 void YoukuWindow::OnUserDefined(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	if (lParam) {
@@ -343,6 +361,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 			if (static_cast<int>(data["error"]["code"].number_value()) == -202) {
 				tstring password;
 				//pop up a password input dialog
+				if (DialogBox(nullptr, MAKEINTRESOURCE(IDD_PWD_INPUT_DIALOG),))
 				JSONurl += TEXT("&pwd=") + password;
 				*pconsole << endl << TEXT("New JSON URL with password is:") << endl;
 				*pconsole << JSONurl << endl;

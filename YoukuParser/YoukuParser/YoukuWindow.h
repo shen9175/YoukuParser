@@ -57,6 +57,7 @@ private:
 	void OnOKButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void OnSelectFolderButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void OnConsoleNotification(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
+	bool InputPWDDialogPro(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void ParseThread();
 	void m3u8Thread(const tstring& videoURL, size_t index);
 	map< size_t, pair<string, pair<size_t, size_t>>> resolutions;
@@ -65,6 +66,7 @@ private:
 	tstring URL;
 	tstring htmlcookie;
 	tstring DownloadPath;
+	tstring password;
 	YoukuParser* pYouku;
 	CEditCtrl* pEdit;
 	CEditCtrl* pConsole;

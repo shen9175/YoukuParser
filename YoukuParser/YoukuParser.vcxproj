@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="resource.h" />
     <ClInclude Include="YoukuParser\consolestream.h" />
     <ClInclude Include="YoukuParser\ErrorHandle.h" />
     <ClInclude Include="YoukuParser\flv_joiner.h" />
@@ -173,6 +174,9 @@
     <ClCompile Include="YoukuParser\window.cpp" />
     <ClCompile Include="YoukuParser\YoukuParser.cpp" />
     <ClCompile Include="YoukuParser\YoukuWindow.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="YoukuParser.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
