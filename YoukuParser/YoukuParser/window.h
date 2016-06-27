@@ -146,3 +146,14 @@ private:
 
 
 };
+
+class CDialogBox {
+public:
+	CDialogBox() {}
+	INT_PTR  DoModal(HINSTANCE hInstance, LPCTSTR lpTemplate, HWND hwndParent);
+	virtual void OnCommand(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {}
+	virtual bool OnInitial(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) { return true; }
+private:
+	static LRESULT CALLBACK StaticDialogProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
+	bool DialogProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
+};

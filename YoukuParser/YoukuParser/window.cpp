@@ -92,7 +92,7 @@ bool CWnd::RegisterWnd() {
 LRESULT CALLBACK CWnd::RetriveWndProcPointer(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	if (iMsg == WM_NCCREATE) {
 		//retrieve "this" pointer which has been passed by CreateWindow() last parameter: "this" pointer is stored in the first member of CREATESTRUCT lpCreateParams
-		SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(reinterpret_cast<LPCREATESTRUCT>(lParam)->lpCreateParams));//retrieve Core this pointer
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(reinterpret_cast<LPCREATESTRUCT>(lParam)->lpCreateParams));//retrieve CWnd this pointer
 		return reinterpret_cast<CWnd*>(reinterpret_cast<LPCREATESTRUCT>(lParam)->lpCreateParams)->WndProc(hwnd, iMsg, wParam, lParam);
 	} else {
 		CWnd* curretnThis = reinterpret_cast<CWnd*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
@@ -321,4 +321,27 @@ bool CListViewCtrl::AutoAdjustColumnSize(const int& iCol) {
 		return false;
 	}
 	return true;
+}
+
+INT_PTR  CDialogBox::DoModal(HINSTANCE hInstance, LPCTSTR lpTemplate, HWND hwndParent) {
+	return DialogBoxParam(hInstance, lpTemplate, hwndParent, static_cast<DLGPROC>(StaticDialogProc), reinterpret_cast<LPARAM>(this));
+}
+
+LRESULT CALLBACK CDialogBox::StaticDialogProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
+	static CDialogBox* current = nullptr;
+	if (iMsg == WM_INITDIALOG) {
+		current = reinterpret_cast<CDialogBox*>(lParam);
+		return current->OnInitial(hwnd, iMsg, wParam, lParam);
+	} else {
+		return current->DialogProc(hwnd, iMsg, wParam, lParam);
+	}
+}
+bool CDialogBox::DialogProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
+	switch (iMsg) {
+		case WM_COMMAND: {
+			OnCommand(hwnd, iMsg, wParam, lParam);
+			return true;
+		}
+	}
+	return false;
 }

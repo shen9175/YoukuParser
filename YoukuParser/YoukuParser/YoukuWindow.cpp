@@ -255,25 +255,47 @@ void YoukuWindow::OnCheckListNotify(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM 
 			break;
 	}
 }
-bool YoukuWindow::InputPWDDialogPro(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
+void InputPWD::OnCommand(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	password = TEXT("");
-	switch (iMsg) {
-	case WM_COMMAND:
-		switch (LOWORD(wParam)) {
-		case IDOK:
-			if (!GetDlgItemText(hwnd, IDC_EDIT_PWD_INPUT, &password[0], 80))
-				password = TEXT("");
-
-			// Fall through. 
-
+	TCHAR buffer[80];
+	switch (LOWORD(wParam)) {
+		case ID_PWD_INPUT_OK:
+			//GetDlgItemText(hwnd, IDC_EDIT_PWD_INPUT, &password[0], 80);
+			GetDlgItemText(hwnd, IDC_EDIT_PWD_INPUT, buffer, 80);
+			//password = buffer;
+		case ID_PWD_INPUT_CANCEL:
 		case IDCANCEL:
 			EndDialog(hwnd, wParam);
-			return true;
-		}
+			//?? as long as hit ENTER to access case ID_PWD_INPUT_OK, after EndDialog, password will be empty. But Mouse Click OK to access ID_PWD_INPUT_OK, after EndDialog, password has the input.
+			password = buffer;
 	}
+	
+}
+bool InputPWD::OnInitial(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
+	SetFocus(GetDlgItem(hwnd, IDC_EDIT_PWD_INPUT));
+	HWND pwd_edit_hwnd = GetDlgItem(hwnd, IDC_EDIT_PWD_INPUT);
+	pYoukuWindow->SetOldEditProc(reinterpret_cast<WNDPROC>(SetWindowLongPtr(GetDlgItem(hwnd, IDC_EDIT_PWD_INPUT), GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(YoukuWindow::StaticSubEditProc))));
+	SendMessage(pwd_edit_hwnd, WM_USER, 0, reinterpret_cast<LPARAM>(pYoukuWindow));
 	return false;
 }
-
+LRESULT CALLBACK YoukuWindow::StaticSubEditProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	static YoukuWindow* current;
+	if (msg == WM_USER) {
+		current = reinterpret_cast<YoukuWindow*>(lParam);
+		return true;
+	} else {
+		return current->SubEditProc(wnd, msg, wParam, lParam);
+	}
+}
+LRESULT YoukuWindow::SubEditProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	if (msg == WM_KEYDOWN) {
+		if (wParam == VK_RETURN) {
+			SendMessage(GetParent(wnd), WM_COMMAND, ID_PWD_INPUT_OK, 0);
+			return 0;
+		}
+	}
+	return CallWindowProc(oldeditproc, wnd, msg, wParam, lParam);
+}
 void YoukuWindow::OnUserDefined(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	if (lParam) {
 		ShowWindow(GetDlgItem(hwnd, ID_CONSOLE), SW_HIDE);
@@ -326,26 +348,35 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 	tstring vid = getVid(videoURL);
 	tstring JSONurl = getJSONUrl(vid);
 	httpclient hc(*pconsole);
-	//tstring cookie = hc.RetrievingHTTPHeaders()
 	tstring htmlsetcookie = htmlcookie;
 	*pconsole << TEXT("htmlSetCookie = ") << htmlsetcookie << endl;
 	//tstring setcookie = hc.GetSetCookie(videoURL);
 	//*pconsole << TEXT("SetCookie = ") << setcookie << endl;
 	//tstring cookie = TEXT("Cookie: ") /*+ htmlsetcookie + TEXT(",")*/ + setcookie + TEXT(" __ysuid=") + GetPvid(6) + TEXT("\r\n") + TEXT("Referer: ") + videoURL + TEXT("\r\n");
-	tstring cookie = TEXT("Cookie: ") + htmlsetcookie + TEXT(" __ysuid=") + GetPvid(6) + TEXT("\r\n") + TEXT("Referer: ") + videoURL + TEXT("\r\n");
+	//tstring cookie = TEXT("Cookie: ") + htmlsetcookie + TEXT(" __ysuid=") + GetPvid(6) + TEXT("\r\n") + TEXT("Referer: ") + videoURL + TEXT("\r\n"); ->no referer need if you put referer in GetJson()
+	tstring cookie = TEXT("Cookie: ") + htmlsetcookie + TEXT(" __ysuid=") + GetPvid(6) + TEXT("\r\n");
 	*pconsole << TEXT("Combined Cookie = ") << cookie << endl;
 	tstring referer = videoURL;
 	tstring JSON;
 	*pconsole << endl << TEXT("Downloading JSON file...") << endl;
-	if (hc.GetJson(JSONurl, JSON, referer, cookie)) {
-		*pconsole << endl << TEXT("Finishing downloading JSON file") << endl;
-		*pconsole << TEXT("JSON file content is: ") << endl;
-		*pconsole << JSON << endl;
-	} else {
-		*pconsole << TEXT("Get JSON Failed!") << endl;
+	int tries = 20;
+	while (tries > 0) {
+		if (hc.GetJson(JSONurl, JSON, referer, cookie)) {
+			*pconsole << endl << TEXT("Finishing downloading JSON file") << endl;
+			*pconsole << TEXT("JSON file content is: ") << endl;
+			*pconsole << JSON << endl;
+			break;
+		} else {
+			*pconsole << TEXT("Get JSON Failed!") << endl;
+			*pconsole << TEXT("Try Get JSON Again...") << endl;
+			--tries;
+		}
+	}
+	if (tries <= 0) {
+		*pconsole << TEXT("Get JSON Failed for 20 times, give up for the video!") << endl;
+		mtx.unlock();
 		return;
 	}
-	
 	string err;
 	string json;
 	tstring m3u8;
@@ -359,38 +390,60 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 	if (data["stream"].is_null()) {
 		if (!data["error"].is_null()) {
 			if (static_cast<int>(data["error"]["code"].number_value()) == -202) {
-				tstring password;
-				//pop up a password input dialog
-				if (DialogBox(nullptr, MAKEINTRESOURCE(IDD_PWD_INPUT_DIALOG),))
-				JSONurl += TEXT("&pwd=") + password;
-				*pconsole << endl << TEXT("New JSON URL with password is:") << endl;
-				*pconsole << JSONurl << endl;
-				*pconsole << endl << TEXT("Downloading JSON again file with password...") << endl;
-				if (hc.GetJson(JSONurl, JSON, referer, cookie)) {
-					*pconsole << endl << TEXT("Finishing downloading JSON file") << endl;
-					*pconsole << TEXT("JSON file content is: ") << endl;
-					*pconsole << JSON << endl;
-#ifdef UNICODE
-					json = WideToByte(CP_UTF8, JSON);
-#else
-					json = JSON;
-#endif
-					JSONobj = Json::parse(json, err);
-					data = JSONobj["data"].object_items();
-					if (data["stream"].is_null()) {
-						*pconsole << TEXT("Failed: Wrong Password!") << endl;
+				bool wrongpwd = true;
+				while (wrongpwd) {
+					InputPWD pwd(password, this);
+					if (pwd.DoModal(reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)), MAKEINTRESOURCE(IDD_PWD_INPUT_DIALOG), hwnd) == ID_PWD_INPUT_OK) {
+						*pconsole << TEXT("Input password is ") << password << endl;;
+					} else {
+						*pconsole << TEXT("No password, the video will be skipped!") << endl;
+						mtx.unlock();
 						return;
 					}
-				} else {
-					*pconsole << TEXT("Get JSON Failed!") << endl;
-					return;
+					JSONurl += TEXT("&pwd=") + password;
+					*pconsole << endl << TEXT("New JSON URL with password is:") << endl;
+					*pconsole << JSONurl << endl;
+					*pconsole << endl << TEXT("Downloading JSON again file with password...") << endl;
+					tries = 20;
+					JSON.clear();
+					while (tries > 0) {
+						if (hc.GetJson(JSONurl, JSON, referer, cookie)) {
+							*pconsole << endl << TEXT("Finishing downloading JSON file") << endl;
+							*pconsole << TEXT("JSON file content is: ") << endl;
+							*pconsole << JSON << endl;
+#ifdef UNICODE
+							json = WideToByte(CP_UTF8, JSON);
+#else
+							json = JSON;
+#endif
+							JSONobj = Json::parse(json, err);
+							data = JSONobj["data"].object_items();
+							if (data["stream"].is_null()) {
+								*pconsole << TEXT("Failed: Wrong Password!") << endl;
+							} else {
+								wrongpwd = false;
+							}
+							break;
+						} else {
+							*pconsole << TEXT("Get JSON Failed!") << endl;
+							*pconsole << TEXT("Try Get JSON Again...") << endl;
+							--tries;
+						}
+					}
+					if (tries <= 0) {
+						*pconsole << TEXT("Get JSON Failed for 20 times, give up for the video!") << endl;
+						mtx.unlock();
+						return;
+					}
 				}
 			} else {
 				*pconsole << TEXT("Failed: ") << ByteToWide(CP_UTF8, data["error"]["note"].string_value()) << endl;
+				mtx.unlock();
 				return;
 			}
 		} else {
 			*pconsole << TEXT("Failed: video not found!") << endl;
+			mtx.unlock();
 			return;
 		}
 	}
@@ -423,14 +476,18 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 		tstring ip;
 		string secstr = security["encrypt_string"].string_value();
 		auto oip = security["ip"].int_value();
+#ifdef UNICODE
 		security_string = ByteToWide(CP_UTF8, secstr);
+#else
+		security_string = secstr;
+#endif
 		ip = to_tstring(oip);
 		*pconsole << TEXT("Finishing extracting \"encrypt_string\" and \"ip\" from JSON file!") << endl;
 		*pconsole << endl << TEXT("Decrypting and synthething m3u8 address link...") << endl;
 		GetParameters(vid, security_string, sid, token, ep);
 		*pconsole << TEXT("Finishing decrypting and synthething m3u8 address link...") << endl;
 		*pconsole << TEXT("M3U8 file address link is: ") << endl << endl;
-		m3u8 = TEXT("http://pl.youku.com/playlist/m3u8?vid=") + vid + TEXT("&type=") + resolution_choice.at((*resolutions.crbegin()).second.first).first +TEXT("&ts=") + to_tstring(time(nullptr)) + TEXT("&keyframe=1&ep=") + ep + TEXT("&sid=") + sid + TEXT("&token=") + token + TEXT("&ctype=12&ev=1&oip=") + ip;
+		m3u8 = TEXT("http://pl.youku.com/playlist/m3u8?vid=") + vid + TEXT("&type=") + resolution_choice.at((*resolutions.crbegin()).second.first).first +TEXT("&ts=") + to_tstring(time(nullptr)) + TEXT("&keyframe=1&ep=") + ep + TEXT("&sid=") + sid + TEXT("&token=") + token + TEXT("&ctype=12&ev=1&oip=") + ip + (password.empty() ? TEXT("") : TEXT("&password=") + password);
 		*pconsole << m3u8 << endl;
 		*pconsole << endl << TEXT("Getting video file true downloading links container: m3u8 file...") << endl;
 		tstring m3u8file;
@@ -449,8 +506,8 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 		M3U8Parser(m3u8file, videolinks);
 		*pconsole << endl << TEXT("Finish parsing m3u8 file!") << endl;
 		if (videolinks.links.empty()) {
-			mtx.unlock();
 			*pconsole << endl << TEXT("No video file parsed out!") << endl;
+			mtx.unlock();
 			return;
 		}
 		*pconsole << endl << TEXT("Final true video downloading links are:") << endl << endl;

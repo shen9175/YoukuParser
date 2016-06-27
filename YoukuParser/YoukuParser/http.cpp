@@ -433,6 +433,7 @@ bool httpclient::GetVideo(const tstring &url, string& video) {
 	bool result = false;
 	int tries = 20;
 	do {
+		video.clear();
 		if (EstablishConnection(url, tstring(), false, nullptr)) {
 			result = downloadBINfile(video);
 			InternetCloseHandle(hHttpRequest);

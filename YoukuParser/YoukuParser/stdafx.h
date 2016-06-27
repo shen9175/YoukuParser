@@ -6,7 +6,7 @@
 #pragma once
 
 #include "targetver.h"
-#include "resource.h"
+#include "..\resource.h"
 #include <windows.h>
 #include <windowsx.h>
 #include <CommCtrl.h>

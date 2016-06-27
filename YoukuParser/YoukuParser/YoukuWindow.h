@@ -26,7 +26,6 @@ public:
 	bool GetCheckState(const int& i);
 	bool Update(const int& i);
 };
-
 class YoukuWindow : public CWnd{
 public:
 	YoukuWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow, YoukuParser* p);
@@ -46,9 +45,13 @@ public:
 	ConsoleStream& GetConsoleHandle() { return *pconsole; }
 	//const tstring& GetURL() { return URL; }
 	void SetHtmlCookie(const tstring& cookie) { htmlcookie = cookie; }
+	void SetOldEditProc(WNDPROC p) { oldeditproc = p; };
 	//const tstring& GetHtmlCookie() { return htmlcookie; }
 	//const tstring& GetDownloadPath() { return DownloadPath; }
+	static LRESULT CALLBACK StaticSubEditProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam);
 private:
+	
+	LRESULT SubEditProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	void OnGoButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void OnClearButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void OnCheckListNotify(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
@@ -57,7 +60,6 @@ private:
 	void OnOKButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void OnSelectFolderButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void OnConsoleNotification(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
-	bool InputPWDDialogPro(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	void ParseThread();
 	void m3u8Thread(const tstring& videoURL, size_t index);
 	map< size_t, pair<string, pair<size_t, size_t>>> resolutions;
@@ -84,5 +86,16 @@ private:
 	ConsoleStream* pconsole;
 	HGLOBAL hEditDS;
 	mutex mtx;
+	WNDPROC oldeditproc;
 };
 
+
+class InputPWD : public CDialogBox {
+public:
+	InputPWD(tstring& pwd, YoukuWindow* p) : password(pwd), pYoukuWindow(p) {}
+	void OnCommand(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
+	bool OnInitial(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
+private:
+	tstring& password;
+	YoukuWindow* pYoukuWindow;
+};
