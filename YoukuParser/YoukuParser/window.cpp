@@ -185,8 +185,22 @@ CEditCtrl::CEditCtrl(const tstring& caption, const DWORD& dwWndStyle, const int&
 	if (hwnd == nullptr) {
 		MessageBox(0, TEXT("Create Edit Control Failed"), 0, 0);
 	}
+	//extract the offical defined Edit Control window procedure into OldEditProc with substitution of your own customized StaticEditProc
+	OldEditProc =reinterpret_cast<WNDPROC>(SetWindowLongPtr(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(CEditCtrl::StaticEditProc)));
+	SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 }
 
+LRESULT CALLBACK CEditCtrl::StaticEditProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	CEditCtrl* current = reinterpret_cast<CEditCtrl*>(GetWindowLongPtr(wnd, GWLP_USERDATA));
+	assert(current);
+	return current->SubEditProc(wnd, msg, wParam, lParam);
+}
+LRESULT CEditCtrl::SubEditProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	//the derived class can override this OnSubEdit function to make customization
+	//using default official Edit Control window procedure to handle everything
+	return OnSubEditProc(wnd, msg, wParam, lParam);
+	
+}
 
 
 CStaticCtrl::CStaticCtrl(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi) : CControl(caption, dwWndStyle, x, y, width, height, parent, hmenu, hi) {

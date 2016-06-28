@@ -86,11 +86,11 @@ class CEditCtrl : public CControl {
 public:
 	CEditCtrl(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi);
 	virtual void OnNotification(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {}
-	//void OnInitWnd() {}
-	//bool CreateWnd() {}
-	//void OnCreate(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {}
+	virtual LRESULT OnSubEditProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam) { return CallWindowProc(OldEditProc, wnd, msg, wParam, lParam); }
 private:
-
+	static LRESULT CALLBACK StaticEditProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
+	LRESULT SubEditProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	WNDPROC OldEditProc;
 };
 
 

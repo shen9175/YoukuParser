@@ -3,7 +3,7 @@
 
 
 YoukuWindow::YoukuWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow, YoukuParser* p) : CWnd(hInstance, hPrevInstance, szCmdLine, iCmdShow), pYouku(p) {
-	InitializeCriticalSection(&cs);
+
 	DownloadPath = tstring();
 	DWORD len = GetCurrentDirectory(0, &DownloadPath[0]);
 	DownloadPath.resize(len);
@@ -91,7 +91,6 @@ YoukuWindow::~YoukuWindow() {
 		delete pconsole;
 		pconsole = nullptr;
 	}
-	DeleteCriticalSection(&cs);
 	GlobalFree(hEditDS);
 }
 void YoukuWindow::OnInitWnd() {
@@ -101,7 +100,7 @@ void YoukuWindow::OnInitWnd() {
 	SetWndStyle(WS_OVERLAPPEDWINDOW);
 }
 void YoukuWindow::OnCreate(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
-	pEdit = new CEditCtrl(TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_EDIT), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
+	pEdit = new InputAddress(TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_EDIT), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
 	pPath = new CEditCtrl(TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_PATH), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
 	
 	hEditDS = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT | GMEM_SHARE, 256L);
@@ -121,6 +120,7 @@ void YoukuWindow::OnCreate(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	pconsole = new ConsoleStream(GetDlgItem(hwnd, ID_CONSOLE));
 	out = pconsole;
 	SetWindowText(GetDlgItem(hwnd, ID_PATH), DownloadPath.c_str());
+	pEdit->CSetFocus();
 }//  
 void YoukuWindow::OnSize(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	CWnd::OnSize(hwnd, iMsg, wParam, lParam);
@@ -278,6 +278,20 @@ bool InputPWD::OnInitial(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	SendMessage(pwd_edit_hwnd, WM_USER, 0, reinterpret_cast<LPARAM>(pYoukuWindow));
 	return false;
 }
+
+LRESULT InputAddress::OnSubEditProc(HWND hedit, UINT iMsg, WPARAM wParam, LPARAM lParam) {
+	switch (iMsg) {
+	case WM_KEYDOWN:
+		switch (wParam) {
+			case VK_RETURN:
+				HWND parent = GetParent(hedit);
+				SendMessage(GetParent(hedit), WM_COMMAND, ID_BUTTON_GO, 0);
+				return true;
+		}
+	}
+	return CEditCtrl::OnSubEditProc(hedit, iMsg, wParam, lParam);
+}
+
 LRESULT CALLBACK YoukuWindow::StaticSubEditProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	static YoukuWindow* current;
 	if (msg == WM_USER) {

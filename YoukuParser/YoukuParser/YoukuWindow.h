@@ -26,6 +26,11 @@ public:
 	bool GetCheckState(const int& i);
 	bool Update(const int& i);
 };
+class InputAddress : public CEditCtrl {
+public:
+	InputAddress(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi) : CEditCtrl(caption, dwWndStyle, x, y, width, height, parent, hmenu, hi) {}
+	LRESULT OnSubEditProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
+};
 class YoukuWindow : public CWnd{
 public:
 	YoukuWindow(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow, YoukuParser* p);
@@ -70,7 +75,7 @@ private:
 	tstring DownloadPath;
 	tstring password;
 	YoukuParser* pYouku;
-	CEditCtrl* pEdit;
+	InputAddress* pEdit;
 	CEditCtrl* pConsole;
 	CEditCtrl* pPath;
 	GoButton* pButton;
