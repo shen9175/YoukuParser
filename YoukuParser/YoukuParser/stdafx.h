@@ -25,6 +25,7 @@
 
 #include <VersionHelpers.h>
 #include<iostream>
+#include<iomanip>
 #include<string>
 #include<sstream>
 #include<fstream>
@@ -136,6 +137,8 @@ using namespace json11;
 
 #include "consolestream.h"
 #include "ErrorHandle.h"
+#include "timer.h"
+#include "speedometer.h"
 #include "http.h"
 #include "parser.h"
 #include "window.h"

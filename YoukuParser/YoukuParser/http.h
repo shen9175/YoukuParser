@@ -23,6 +23,7 @@ class httpclient {
 		tstring setcookie;
 		DWORD resource_size;
 		ConsoleStream& output;
+		Speedometer speedo;
 		unordered_map<int, tstring> internet_scheme{
 			{ -2, TEXT("INTERNET_SCHEME_PARTIAL") },
 			{ -1, TEXT("INTERNET_SCHEME_UNKNOWN") },

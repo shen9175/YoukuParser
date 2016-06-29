@@ -322,6 +322,9 @@ void YoukuWindow::OnGoButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM 
 	ShowWindow(GetDlgItem(hwnd, ID_LISTCHECKBOX), SW_HIDE);
 	HWND hwndEdit = GetDlgItem(hwnd, ID_EDIT);
 	size_t length = SendMessage(hwndEdit, EM_LINELENGTH, 0, 0);
+	if (length == 0) {
+		return;
+	}
 	URL.resize(length);
 	// Before sending the message, set the first word of this buffer to the size, in TCHARs, of the buffer. For ANSI text, this is the number of bytes; 
 	//for Unicode text, this is the number of characters. The size in the first word is overwritten by the copied line.

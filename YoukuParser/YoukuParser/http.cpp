@@ -391,6 +391,8 @@ bool httpclient::downloadBINfile(string& file) {
 	if (resource_size <= 0) {
 		return false;
 	}
+	speedo.Reset();
+	tstring speed = TEXT("downloading speed estimating...");
 	do {
 		result = InternetReadFile(/*hURL*/hHttpRequest, Buffer, 1024, &BufferLen);
 		if (!result) {
@@ -401,11 +403,11 @@ bool httpclient::downloadBINfile(string& file) {
 		} else {
 			file.append(Buffer, BufferLen);
 			percentage = static_cast<int>(static_cast<int>(file.size()) / static_cast<double>(resource_size) * 100);
-			if (percentage > prevpercentage) {
+			speedo.FeedNewSize(BufferLen);
+			if (percentage > prevpercentage || speedo.NeedUpdate(speed)) {
 				prevpercentage = percentage;
-				//output || TEXT("Downloading progress: ") || prevpercentage || TEXT("%") || endl;
 				output || endl;
-				output << TEXT("Downloading progress: ") << prevpercentage << TEXT("%");
+				output << TEXT("Downloading progress: ") << prevpercentage << TEXT("%    ") << speed;
 			}
 		}
 	} while (result && BufferLen != 0);

@@ -504,7 +504,13 @@ bool read_tag(Stream& stream, tag& stream_tag) {
 	//stream_tag.timestamp = static_cast<uint8_t>(stream[3]) + static_cast<uint32_t>(stream[0] << 16 | stream[1] << 8 | stream[2]);
 	stream = stream.substr(4);
 	assert(stream.size() >= 3);
-	assert(stream[0] == 0 && stream[1] == 0 && stream[2] == 0);
+	if (stream[0] != 0 || stream[1] != 0 || stream[2] != 0) {
+		*out << TEXT("stream[0], stream[1], stream[2] has(have) none zero byte(s)!") << endl;
+		*out << TEXT("stream[0]=") << stream[0] << endl;
+		*out << TEXT("stream[1]=") << stream[1] << endl;
+		*out << TEXT("stream[2]=") << stream[2] << endl;
+	}
+	//assert(stream[0] == 0 && stream[1] == 0 && stream[2] == 0);
 	stream = stream.substr(3);
 	stream_tag.body = stream.substr(0,stream_tag.body_size);
 	stream = stream.substr(stream_tag.body_size);
