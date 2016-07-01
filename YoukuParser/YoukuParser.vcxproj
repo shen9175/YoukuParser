@@ -147,17 +147,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h" />
     <ClInclude Include="YoukuParser\consolestream.h" />
     <ClInclude Include="YoukuParser\ErrorHandle.h" />
     <ClInclude Include="YoukuParser\flv_joiner.h" />
     <ClInclude Include="YoukuParser\http.h" />
     <ClInclude Include="YoukuParser\json11.hpp" />
     <ClInclude Include="YoukuParser\parser.h" />
+    <ClInclude Include="YoukuParser\resource.h" />
     <ClInclude Include="YoukuParser\speedometer.h" />
     <ClInclude Include="YoukuParser\stdafx.h" />
     <ClInclude Include="YoukuParser\targetver.h" />
     <ClInclude Include="YoukuParser\timer.h" />
+    <ClInclude Include="YoukuParser\TreeListView.h" />
     <ClInclude Include="YoukuParser\utilities.h" />
     <ClInclude Include="YoukuParser\window.h" />
     <ClInclude Include="YoukuParser\YoukuParser.h" />
@@ -174,13 +175,14 @@
     <ClCompile Include="YoukuParser\speedometer.cpp" />
     <ClCompile Include="YoukuParser\stdafx.cpp" />
     <ClCompile Include="YoukuParser\timer.cpp" />
+    <ClCompile Include="YoukuParser\TreeListView.cpp" />
     <ClCompile Include="YoukuParser\utilities.cpp" />
     <ClCompile Include="YoukuParser\window.cpp" />
     <ClCompile Include="YoukuParser\YoukuParser.cpp" />
     <ClCompile Include="YoukuParser\YoukuWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="YoukuParser.rc" />
+    <ResourceCompile Include="YoukuParser\YoukuParser.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

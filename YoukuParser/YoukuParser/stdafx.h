@@ -133,6 +133,7 @@ struct DownloadFactors {
 #include "json11.hpp"
 #include "utilities.h"
 #include "flv_joiner.h"
+#include "TreeListView.h"
 using namespace json11;
 
 #include "consolestream.h"

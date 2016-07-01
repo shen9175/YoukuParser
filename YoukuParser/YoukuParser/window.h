@@ -4,7 +4,7 @@ class CWnd {
 public:
 	CWnd();
 	CWnd(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCmdShow);
-	~CWnd() {}
+	~CWnd();
 	virtual int WINAPI Run();
 	virtual void OnInitWnd() {}
 	virtual bool CreateWnd();
@@ -42,6 +42,7 @@ public:
 	void SetIconSmall(const HICON& iconsm) { wndclass.hIconSm = iconsm; }
 	void SetcxChar(const int& x) { cxChar = x; }
 	void SetcyChar(const int& y) { cyChar = y; }
+	bool SetFont(int nHeight, int nWidth, int nEscapement, int nOrientation, int fnWeight, DWORD fdwItalic, DWORD fdwUnderline, DWORD fdwStrikeOut, DWORD fdwCharSet, DWORD fdwOutputPrecision, DWORD fdwClipPrecision, DWORD   fdwQuality, DWORD fdwPitchAndFamily, LPCTSTR lpszFace);
 protected:
 
 
@@ -68,6 +69,7 @@ private:
 	static LRESULT CALLBACK RetriveWndProcPointer(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	LRESULT WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	bool RegisterWnd();
+	HFONT hfont;
 
 };
 
@@ -145,6 +147,16 @@ public:
 private:
 
 
+};
+
+class CTreeView : public CControl {
+public:
+	CTreeView(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi);
+
+};
+
+class CHeader : public CControl {
+	CHeader(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi);
 };
 
 class CDialogBox {

@@ -51,13 +51,16 @@
     <ClInclude Include="YoukuParser\YoukuWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="YoukuParser\timer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="YoukuParser\speedometer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="YoukuParser\resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="YoukuParser\TreeListView.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -104,9 +107,12 @@
     <ClCompile Include="YoukuParser\speedometer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="YoukuParser\TreeListView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="YoukuParser.rc">
+    <ResourceCompile Include="YoukuParser\YoukuParser.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

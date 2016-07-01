@@ -52,6 +52,11 @@ CWnd::CWnd(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCm
 	cxChar = LOWORD(GetDialogBaseUnits());
 	cyChar = HIWORD(GetDialogBaseUnits());
 }
+CWnd::~CWnd() {
+	if (hfont) {
+		DeleteObject(hfont);
+	}
+}
 
 int WINAPI CWnd::Run() {
 	OnInitWnd();
@@ -165,6 +170,16 @@ void CWnd::CMoveWindow(int x, int y, int width, int height, bool repaint) {
 	SetHeight(height);
 	MoveWindow(hwnd, x, y, width, height, repaint);
 }
+
+
+bool CWnd::SetFont(int nHeight, int nWidth, int nEscapement, int nOrientation, int fnWeight, DWORD fdwItalic, DWORD fdwUnderline, DWORD fdwStrikeOut, DWORD fdwCharSet, DWORD fdwOutputPrecision, DWORD fdwClipPrecision, DWORD   fdwQuality, DWORD fdwPitchAndFamily, LPCTSTR lpszFace) {
+	hfont = CreateFont(nHeight, nWidth, nEscapement, nOrientation, fnWeight, fdwItalic, fdwUnderline, fdwStrikeOut, fdwCharSet, fdwOutputPrecision, fdwClipPrecision, fdwQuality, fdwPitchAndFamily, lpszFace);
+	if (hfont == 0 || hwnd == 0) {
+		return false;
+	}
+	SendMessage(hwnd, WM_SETFONT, reinterpret_cast<WPARAM>(hfont), true);
+	return true;
+}
 CControl::CControl(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi) {
 	SetWndCaption(caption);
 	SetWndStyle(dwWndStyle);
@@ -260,7 +275,25 @@ CButtonCtrl::CButtonCtrl(const tstring& caption, const DWORD& dwWndStyle, const 
 		MessageBox(0, TEXT("Create Button Control Failed"), 0, 0);
 	}
 }
+CTreeView::CTreeView(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi) : CControl(caption, dwWndStyle, x, y, width, height, parent, hmenu, hi) {
+	SetAppName(WC_TREEVIEW);
+	DWORD errorcode;
+	hwnd = CreateWindow(szAppName.c_str(), szCaption.c_str(), dwWndStyle, xPos, yPos, width, height, hWndParent, hMenu, hInstance, 0);
+	errorcode = GetLastError();
+	if (hwnd == nullptr) {
+		MessageBox(0, TEXT("Create TreeView Control Failed"), 0, 0);
+	}
+}
 
+CHeader::CHeader(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi) : CControl(caption, dwWndStyle, x, y, width, height, parent, hmenu, hi) {
+	SetAppName(WC_HEADER);
+	DWORD errorcode;
+	hwnd = CreateWindow(szAppName.c_str(), szCaption.c_str(), dwWndStyle, xPos, yPos, width, height, hWndParent, hMenu, hInstance, 0);
+	errorcode = GetLastError();
+	if (hwnd == nullptr) {
+		MessageBox(0, TEXT("Create Header Control Failed"), 0, 0);
+	}
+}
 
 CListViewCtrl::CListViewCtrl(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi) : CControl(caption, dwWndStyle, x, y, width, height, parent, hmenu, hi) {
 	SetAppName(TEXT("SysListView32"));
