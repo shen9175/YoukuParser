@@ -84,6 +84,14 @@ struct TreeListColumnInfo {
 	int                 Width;
 };
 
+struct TreeListDict {
+	int                         ReferenceCount;
+	vector<HWND>                HwndParent;
+	vector<vector<HWND>>        HwndInstances;
+	vector<CTreeListView*>		SessionPtr;
+};
+
+
 class CTreeListView{
 public:
 	CTreeListView() {}
@@ -95,7 +103,12 @@ private:
 	TreeListNode* TreeList_Internal_AddNode(TreeListNode *pParent);
 	TreeListNode* TreeList_Internal_NodeCreateNew();
 	TreeListNode* TreeList_Internal_NodeGetLastBrother(TreeListNode *pNode);
-	TreeListNode* TreeList_Internal_NodeColonize(TreeListNode *pNode, TreeListNodeData *pNodeData)
+	TreeListNode* TreeList_Internal_NodeColonize(TreeListNode *pNode, TreeListNodeData *pNodeData);
+	void TreeList_Internal_NodeFreeAllSubNodes(TreeListNode *pNode);
+	void TreeList_Internal_AutoSetLastColumn();
+	void TreeList_Internal_UpdateColumns();
+	void TreeList_Internal_RepositionControls();
+	void TreeList_Internal_DestroyEditBox();
 	HINSTANCE                   InstanceParent;
 	HWND                        HwndParent;
 	HWND                        HwndTreeView;

@@ -18,7 +18,7 @@
 #define TREELIST_WM_EDIT_NODE                   (WM_USER + 100)
 #define TREELIST_WM_EDIT_ENTER                  (WM_USER + 101)
 #define TREELIST_ELEMENTS_PER_INSTANCE          4
-#define TREELIST_PROP_VAL                       "TREELIST_PTR" 
+#define TREELIST_PROP_VAL                       TEXT("TREELIST_PTR")
 
 //#define TREELIST_DOUBLE_BUFFEING
 
@@ -37,16 +37,6 @@ typedef HANDLE(CALLBACK* LPREMOVEPROP)(HWND, LPCTSTR);  // VC2010 issue
 
 
 
-///////////////////////////////////////////////////////////////
-// a column (header) struct
-
-typedef struct tag_TreeListColumnInfo {
-
-	char                ColumnName[TREELIST_MAX_STRING + 1];
-	int                 Width;
-
-};
-typedef struct tag_TreeListColumnInfo TreeListColumnInfo;
 
 
 ///////////////////////////////////////////////////////////////
@@ -131,14 +121,6 @@ typedef struct tag_TreeListSession TreeListSession;
 // a pointer to the dictionary will be attached to the parent window of the control.
 // This array will be updated with each instance and destroyed when the last control will be terminated.
 
-static struct tag_TreeListDict {
-	int                         ReferenceCount;
-	HWND                        HwndParent[TREELIST_MAX_INSTANCES];
-	HWND                        HwndInstances[TREELIST_MAX_INSTANCES][TREELIST_ELEMENTS_PER_INSTANCE];
-	TreeListSession             *pSessionPtr[TREELIST_MAX_INSTANCES];
-
-};
-typedef struct tag_TreeListDict TreeListDict;
 
 
 /////////////////////////////////////////////////////////////////
@@ -305,105 +287,86 @@ static void *TreeList_Internal_DictGetPtr(HWND hWndParent, HWND hWndAny) {
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static BOOL TreeList_Internal_DictUpdate(BOOL Clear, TreeListSession *pSession, HWND hWndParent, HWND hWndAny) {
+bool TreeList_Internal_DictUpdate(bool Clear, CTreeListView* pSession, HWND hWndParent, HWND hWndAny) {
 
 
-	int iCount = 0;
-	int iElement = 0;
+	
+	
 	HWND hParent = hWndParent;
 	int iNullsCount = 0;
 	TreeListDict *pTreeListDict = 0;
 
 
 	if (!hWndAny || !pSession)
-		return FALSE;
+		return false;
 
 	if (!hWndParent)
 		hParent = GetParent(hWndAny); // Search for the parent
 
 
 	pTreeListDict = (TreeListDict*)GetProp(hParent, TREELIST_PROP_VAL); // Extract the dict pointer from the parent
-	if (Clear == FALSE) {
+	if (Clear == false) {
 		if (!pTreeListDict) {
 			// Allocate and attach
-			pTreeListDict = (TreeListDict*)malloc(sizeof(TreeListDict));
+			pTreeListDict = new TreeListDict;
 			memset(pTreeListDict, 0, sizeof(TreeListDict));
-			if (SetProp(hParent, TREELIST_PROP_VAL, pTreeListDict) == FALSE)
-				return FALSE;
+			if (SetProp(hParent, TREELIST_PROP_VAL, pTreeListDict) == false)
+				return false;
 
-			pTreeListDict->pSessionPtr[0] = pSession;
-			pTreeListDict->HwndInstances[0][0] = hWndAny;
-			pTreeListDict->HwndParent[0] = hParent;
+			pTreeListDict->SessionPtr.push_back(pSession);
+			pTreeListDict->HwndInstances.push_back({hWndAny});
+			pTreeListDict->HwndParent.push_back(hParent);
 			pTreeListDict->ReferenceCount++;
 
-			return TRUE;
+			return true;
 		}
 
-		for (iCount = 0;iCount<TREELIST_MAX_INSTANCES;iCount++) {
+		for (int iCount = 0;iCount < pTreeListDict->SessionPtr.size();iCount++) {
 
 			// Look for the session pointer
-			if (pTreeListDict->pSessionPtr[iCount] == pSession) {
+			if (pTreeListDict->SessionPtr[iCount] == pSession) {
 				// found it, look if it holds our hwnd
-				for (iElement = 0;iElement < TREELIST_ELEMENTS_PER_INSTANCE;iElement++) {
+				for (int iElement = 0;iElement < pTreeListDict->HwndInstances[iCount].size();iElement++) {
 					if (pTreeListDict->HwndInstances[iCount][iElement] == hWndAny)
-						return FALSE; // All ready there
+						return false; // All ready there
 				}
 
 				// found it, update the array
-				for (iElement = 0;iElement < TREELIST_ELEMENTS_PER_INSTANCE;iElement++) {
-					if (pTreeListDict->HwndInstances[iCount][iElement] == 0) {
-						pTreeListDict->HwndInstances[iCount][iElement] = hWndAny;
-						return TRUE; // Updated
-					}
-				}
-				// If we are here then we could not update, hWnd array was full??
-				return FALSE;
+				pTreeListDict->HwndInstances[iCount].push_back(hWndAny);
+				return true; // Updated
 			}
 		}
 
 
 		// The session was not found, we have to add a new one
-		for (iCount = 0;iCount<TREELIST_MAX_INSTANCES;iCount++) {
+		
+		// Look for an empty place
+		pTreeListDict->SessionPtr.push_back(pSession);
+		pTreeListDict->HwndInstances.push_back({ hWndAny });
+		pTreeListDict->HwndParent.push_back(hParent);
+		pTreeListDict->ReferenceCount++;
+		return true;
+			
+	} else { // Clear the param
 
-			// Look for an empty place
-			if (pTreeListDict->pSessionPtr[iCount] == 0) {
-				pTreeListDict->pSessionPtr[iCount] = pSession;
-				pTreeListDict->HwndInstances[iCount][0] = hWndAny;
-				pTreeListDict->HwndParent[iCount] = hParent;
-				pTreeListDict->ReferenceCount++;
-				return TRUE;
-			}
-
-		}
-
-
-		return FALSE; // could not find an empty place
-	} else // Clear the param
-	{
-
-		for (iCount = 0;iCount<TREELIST_MAX_INSTANCES;iCount++) {
+		for (int iCount = 0;iCount<pTreeListDict->SessionPtr.size();iCount++) {
 
 			// Look for the session pointer
-			if (pTreeListDict->pSessionPtr[iCount] == pSession) {
+			if (pTreeListDict->SessionPtr[iCount] == pSession) {
 				// found it, look if it holds our hwnd
-				for (iElement = 0;iElement < TREELIST_ELEMENTS_PER_INSTANCE;iElement++) {
+				for (int iElement = 0;iElement < pTreeListDict->HwndInstances[iCount].size();iElement++) {
 
 					if (pTreeListDict->HwndInstances[iCount][iElement] == hWndAny) {
-						pTreeListDict->HwndInstances[iCount][iElement] = 0;
+						pTreeListDict->HwndInstances[iCount].erase(pTreeListDict->HwndInstances[iCount].cbegin() + iElement);
 						break;
 					}
 				}
-				// Reduce the ref count when all elements are deleted
-				for (iElement = 0;iElement < TREELIST_ELEMENTS_PER_INSTANCE;iElement++) {
+				
 
-					if (pTreeListDict->HwndInstances[iCount][iElement] == 0)
-						iNullsCount++;
-				}
-
-				if (iNullsCount >= TREELIST_ELEMENTS_PER_INSTANCE) {
+				if (pTreeListDict->HwndInstances[iCount].empty()) {
 
 					// Clean it, reduce refcount
-					pTreeListDict->pSessionPtr[iCount] = 0;
+					pTreeListDict->SessionPtr[iCount] = nullptr;
 					pTreeListDict->HwndParent[0] = 0;
 					pTreeListDict->ReferenceCount--;
 					if (pTreeListDict->ReferenceCount == 0) {
@@ -431,21 +394,17 @@ static BOOL TreeList_Internal_DictUpdate(BOOL Clear, TreeListSession *pSession, 
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static void TreeList_Internal_DestroyEditBox(TreeListSession *pSession) {
-
-	if (!pSession)
-		return; // No session
-
+void CTreeListView::TreeList_Internal_DestroyEditBox() {
+	
 				// Close edit box, when moving and resizing items
-	if (pSession->HwndEditBox) {
+	if (HwndEditBox) {
 
 		TreeList_Internal_DictUpdate(TRUE, pSession, NULL, pSession->HwndEditBox);
-		(WNDPROC)SetWindowLongPtr(pSession->HwndEditBox, GWLP_WNDPROC, (LONG)pSession->ProcEdit); // Restore the original wnd proc to the parent
-		DestroyWindow(pSession->HwndEditBox);
-		pSession->HwndEditBox = 0;
-		pSession->EditedTreeItem = 0;
-		pSession->EditedColumn = 0;
-
+		SetWindowLongPtr(HwndEditBox, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(pSession->ProcEdit)); // Restore the original wnd proc to the parent
+		DestroyWindow(HwndEditBox);
+		HwndEditBox = 0;
+		EditedTreeItem = 0;
+		EditedColumn = 0;
 	}
 }
 
@@ -465,10 +424,7 @@ TreeListNode* CTreeListView::TreeList_Internal_NodeCreateNew() {
 	if (pTmpNode) {
 		memset(pTmpNode, 0, sizeof(TreeListNode));
 		AllocatedTreeBytes += sizeof(TreeListNode);
-
-		for (int iCol = 0;iCol < ColumnsCount;iCol++) {
-			pTmpNode->pNodeData.push_back(0);
-		}
+		pTmpNode->pNodeData.resize(ColumnsCount);
 	}
 	return pTmpNode;
 
@@ -612,42 +568,36 @@ TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent) {
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static void TreeList_Internal_NodeFreeAllSubNodes(TreeListSession *pSession, TreeListNode *pNode) {
+void CTreeListView::TreeList_Internal_NodeFreeAllSubNodes(TreeListNode *pNode) {
 
 
 	TreeListNode *pTmpNode = 0;
 	int          Node;
 
-	if (!pSession || !pNode)
+	if (!pNode)
 		return; // No session
 
 	if (pNode->pSibling) {
 		pTmpNode = pNode->pSibling;
-		TreeList_Internal_NodeFreeAllSubNodes(pSession, pTmpNode);
+		TreeList_Internal_NodeFreeAllSubNodes(pTmpNode);
 	}
 
 	if (pNode->pBrother) {
 		pTmpNode = pNode->pBrother;
-		TreeList_Internal_NodeFreeAllSubNodes(pSession, pTmpNode);
+		TreeList_Internal_NodeFreeAllSubNodes(pTmpNode);
 
 	}
 	// Free the Nodes array
 	for (Node = 0;Node < pNode->NodeDataCount;Node++) {
-		free(pNode->pNodeData[Node]);
-		pNode->pNodeData[Node] = 0;
-		pSession->AllocatedTreeBytes -= sizeof(TreeListNodeData);
+		delete pNode->pNodeData[Node];
+		pNode->pNodeData[Node] = nullptr;
+		AllocatedTreeBytes -= sizeof(TreeListNodeData);
 
 	}
 
-	if (pNode->pNodeData) {
-		free(pNode->pNodeData);
-		pNode->pNodeData = 0;
-		pSession->AllocatedTreeBytes -= (sizeof(TreeListNodeData*) * pSession->ColumnsCount);
-	}
-
-	free(pNode);
-	pNode = 0;
-	pSession->AllocatedTreeBytes -= sizeof(TreeListNode);
+	delete pNode;
+	pNode = nullptr;
+	AllocatedTreeBytes -= sizeof(TreeListNode);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -682,39 +632,39 @@ static TreeListDimensions* TreeList_Internal_RectToDimensions(RECT *pRect, TreeL
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static void TreeList_Internal_AutoSetLastColumn(TreeListSession *pSession) {
+void CTreeListView::TreeList_Internal_AutoSetLastColumn() {
 
 	int     Width, NewWidth;
 	int     StartPosition;
 
-	if (!pSession || (pSession->ColumnsLocked == FALSE))
+	if (ColumnsLocked == FALSE)
 		return; // No session or that the headers are being updated
 
 
-	pSession->ColumnDoAutoAdjust = FALSE;
+	ColumnDoAutoAdjust = FALSE;
 
-	GetClientRect(pSession->HwndHeader, &pSession->RectHeader);
+	GetClientRect(HwndHeader, &RectHeader);
 
 	// Get column width from the header control
-	memset(&pSession->HeaderItem, 0, sizeof(HDITEM));
-	pSession->HeaderItem.mask = HDI_WIDTH;
+	memset(&HeaderItem, 0, sizeof(HDITEM));
+	HeaderItem.mask = HDI_WIDTH;
 
-	pSession->ColumnsCount = Header_GetItemCount(pSession->HwndHeader);;
-	if (pSession->ColumnsCount == -1)
+	ColumnsCount = Header_GetItemCount(HwndHeader);;
+	if (ColumnsCount == -1)
 		return;
 
-	if (Header_GetItem(pSession->HwndHeader, pSession->ColumnsCount - 1, &pSession->HeaderItem) == TRUE) {
-		Width = pSession->HeaderItem.cxy;
-		StartPosition = pSession->ColumnsTotalWidth - Width;
-		NewWidth = (pSession->RectHeader.right - pSession->RectHeader.left) - StartPosition + 2;
+	if (Header_GetItem(HwndHeader, ColumnsCount - 1, &HeaderItem) == TRUE) {
+		Width = HeaderItem.cxy;
+		StartPosition = ColumnsTotalWidth - Width;
+		NewWidth = (RectHeader.right - RectHeader.left) - StartPosition + 2;
 
-		memset(&pSession->HeaderItem, 0, sizeof(HDITEM));
+		memset(&HeaderItem, 0, sizeof(HDITEM));
 
-		pSession->HeaderItem.mask = HDI_WIDTH;
-		pSession->HeaderItem.cxy = NewWidth;
-		pSession->pColumnsInfo[(pSession->ColumnsCount - 1)]->Width = NewWidth; // Store in session
+		HeaderItem.mask = HDI_WIDTH;
+		HeaderItem.cxy = NewWidth;
+		ColumnsInfo[ColumnsCount - 1]->Width = NewWidth; // Store in session
 
-		Header_SetItem(pSession->HwndHeader, (pSession->ColumnsCount - 1), (LPARAM)&pSession->HeaderItem);
+		Header_SetItem(HwndHeader, ColumnsCount - 1, reinterpret_cast<LPARAM>(&HeaderItem));
 	}
 
 }
@@ -728,54 +678,54 @@ static void TreeList_Internal_AutoSetLastColumn(TreeListSession *pSession) {
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static void TreeList_Internal_UpdateColumns(TreeListSession *pSession) {
+void CTreeListView::TreeList_Internal_UpdateColumns() {
 
 	int     iCol;
 	HDITEM  HeaderItem;
 	RECT    RectHeaderItem, RectText;
 
-	if (!pSession || (pSession->ColumnsLocked == FALSE))
+	if (ColumnsLocked == FALSE)
 		return; // No session or that the headers are being updated
 
 	memset(&HeaderItem, 0, sizeof(HeaderItem));
 	HeaderItem.mask = HDI_WIDTH;
 
-	pSession->ColumnsCount = Header_GetItemCount(pSession->HwndHeader);
-	if (pSession->ColumnsCount == -1)
+	ColumnsCount = Header_GetItemCount(HwndHeader);
+	if (ColumnsCount == -1)
 		return;
 
-	pSession->ColumnsTotalWidth = 0;
+	ColumnsTotalWidth = 0;
 
 	// Get column widths from the header control
-	for (iCol = 0; iCol < pSession->ColumnsCount; iCol++) {
-		if (Header_GetItem(pSession->HwndHeader, iCol, &HeaderItem) == TRUE) {
-			pSession->pColumnsInfo[iCol]->Width = HeaderItem.cxy;
-			pSession->ColumnsTotalWidth += HeaderItem.cxy;
+	for (iCol = 0; iCol < ColumnsCount; iCol++) {
+		if (Header_GetItem(HwndHeader, iCol, &HeaderItem) == TRUE) {
+			ColumnsInfo[iCol]->Width = HeaderItem.cxy;
+			ColumnsTotalWidth += HeaderItem.cxy;
 
 			if (iCol == 0)
-				pSession->ColumnsFirstWidth = HeaderItem.cxy;
+				ColumnsFirstWidth = HeaderItem.cxy;
 		}
 	}
 
 	// Resize the editbox
-	if (pSession->HwndEditBox) {
+	if (HwndEditBox) {
 
 		// Get the relevant sizes
-		if (Header_GetItemRect(pSession->HwndHeader, pSession->EditedColumn, &RectHeaderItem) == FALSE)
+		if (Header_GetItemRect(HwndHeader, EditedColumn, &RectHeaderItem) == FALSE)
 			return;
-		if (TreeView_GetItemRect(pSession->HwndTreeView, pSession->EditedTreeItem, &RectText, TRUE) == FALSE)
+		if (TreeView_GetItemRect(HwndTreeView, EditedTreeItem, &RectText, TRUE) == FALSE)
 			return;
 
-		pSession->SizeEdit.Width = RectHeaderItem.right - RectHeaderItem.left;
-		pSession->SizeEdit.Hight = RectText.bottom - RectText.top;
-		pSession->SizeEdit.X = RectHeaderItem.left;
-		pSession->SizeEdit.Y = RectText.top;
+		SizeEdit.Width = RectHeaderItem.right - RectHeaderItem.left;
+		SizeEdit.Hight = RectText.bottom - RectText.top;
+		SizeEdit.X = RectHeaderItem.left;
+		SizeEdit.Y = RectText.top;
 
-		MoveWindow(pSession->HwndEditBox, pSession->SizeEdit.X + pSession->SizeRequested.X,                    // Position: left
-			pSession->SizeEdit.Y + (RectHeaderItem.bottom - RectHeaderItem.top) + 1 + pSession->SizeRequested.Y,      // Position: top
-			pSession->SizeEdit.Width - 1,    // Width
-			pSession->SizeEdit.Hight - 2,    // Height
-			TRUE);
+		MoveWindow(HwndEditBox, SizeEdit.X + SizeRequested.X,                    // Position: left
+			SizeEdit.Y + (RectHeaderItem.bottom - RectHeaderItem.top) + 1 + SizeRequested.Y,      // Position: top
+			SizeEdit.Width - 1,    // Width
+			SizeEdit.Hight - 2,    // Height
+			true);
 	}
 }
 
@@ -787,93 +737,90 @@ static void TreeList_Internal_UpdateColumns(TreeListSession *pSession) {
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-static void TreeList_Internal_RepositionControls(TreeListSession *pSession) {
+void CTreeListView::TreeList_Internal_RepositionControls() {
 
 	DWORD dwStyle;
 	int   iOffSet = 0;
 
-	if (!pSession)
-		return; // No session
-
 				// Get Parrent Size
-	GetClientRect(pSession->HwndParent, &pSession->RectParent);
-	TreeList_Internal_RectToDimensions(&pSession->RectParent, &pSession->SizeParent);
+	GetClientRect(HwndParent, &RectParent);
+	TreeList_Internal_RectToDimensions(&RectParent, &SizeParent);
 
-	if (pSession->UseFullSize == TRUE)
-		memcpy(&pSession->SizeRequested, &pSession->SizeParent, sizeof(TreeListDimensions)); // Full size, the control size is the same as it's parent client size
+	if (UseFullSize)
+		memcpy(&SizeRequested, &SizeParent, sizeof(TreeListDimensions)); // Full size, the control size is the same as it's parent client size
 	else // Get the size of the requested rect
-		TreeList_Internal_RectToDimensions(&pSession->RectRequested, &pSession->SizeRequested);
+		TreeList_Internal_RectToDimensions(&RectRequested, &SizeRequested);
 
 	// Set Header Window
-	memcpy(&pSession->SizeHeader, &pSession->SizeRequested, sizeof(TreeListDimensions));
-	pSession->SizeHeader.Hight = pSession->FontInfoHeader.lfHeight + TREELIST_FONT_EXTRA_HEIGHT;
+	memcpy(&SizeHeader, &SizeRequested, sizeof(TreeListDimensions));
+	SizeHeader.Hight = FontInfoHeader.lfHeight + TREELIST_FONT_EXTRA_HEIGHT;
 
-	if (pSession->GotAnchors == TRUE) {
-		if ((pSession->CreateFlags & TREELIST_ANCHOR_RIGHT) == TREELIST_ANCHOR_RIGHT)
-			pSession->SizeHeader.Width = pSession->SizeParent.Width - pSession->PointAnchors.x - pSession->RectRequested.left;
+	if (GotAnchors) {
+		if ((CreateFlags & TREELIST_ANCHOR_RIGHT) == TREELIST_ANCHOR_RIGHT)
+			SizeHeader.Width = SizeParent.Width - PointAnchors.x - RectRequested.left;
 	}
 
 	// Set TreeList Window size
-	memcpy(&pSession->SizeTree, &pSession->SizeRequested, sizeof(TreeListDimensions));
-	pSession->SizeTree.Hight = (pSession->SizeTree.Hight - pSession->SizeHeader.Hight);
-	pSession->SizeTree.Y += pSession->SizeHeader.Hight;
+	memcpy(&SizeTree, &SizeRequested, sizeof(TreeListDimensions));
+	SizeTree.Hight = (SizeTree.Hight - SizeHeader.Hight);
+	SizeTree.Y += SizeHeader.Hight;
 
 	// Use specified anchores
-	if (pSession->GotAnchors == TRUE) {
+	if (GotAnchors) {
 
-		if ((pSession->CreateFlags & TREELIST_ANCHOR_RIGHT) == TREELIST_ANCHOR_RIGHT)
-			pSession->SizeTree.Width = pSession->SizeParent.Width - pSession->PointAnchors.x - pSession->RectRequested.left;
+		if ((CreateFlags & TREELIST_ANCHOR_RIGHT) == TREELIST_ANCHOR_RIGHT)
+			SizeTree.Width = SizeParent.Width - PointAnchors.x - RectRequested.left;
 
-		if ((pSession->CreateFlags & TREELIST_ANCHOR_BOTTOM) == TREELIST_ANCHOR_BOTTOM)
-			pSession->SizeTree.Hight = pSession->SizeParent.Hight - (pSession->PointAnchors.y + pSession->SizeHeader.Hight) - pSession->RectRequested.top;
+		if ((CreateFlags & TREELIST_ANCHOR_BOTTOM) == TREELIST_ANCHOR_BOTTOM)
+			SizeTree.Hight = SizeParent.Hight - (PointAnchors.y + SizeHeader.Hight) - RectRequested.top;
 	}
 
 	// Move Windows
-	MoveWindow(pSession->HwndTreeView, TREELIST_PRNTCTLSIZE(pSession->SizeTree), 1);
-	MoveWindow(pSession->HwndHeader, TREELIST_PRNTCTLSIZE(pSession->SizeHeader), 1);
+	MoveWindow(HwndTreeView, TREELIST_PRNTCTLSIZE(SizeTree), 1);
+	MoveWindow(HwndHeader, TREELIST_PRNTCTLSIZE(SizeHeader), 1);
 
 	// Get the current TreeView rect
-	GetClientRect(pSession->HwndTreeView, &pSession->RectTree);
+	GetClientRect(HwndTreeView, &RectTree);
 
 	// Get the current Header rect
-	GetClientRect(pSession->HwndHeader, &pSession->RectHeader);
+	GetClientRect(HwndHeader, &RectHeader);
 
 	// Get treelist position relatve to the parent
-	memcpy(&pSession->RectClientOnParent, &pSession->RectTree, sizeof(RECT));
-	MapWindowPoints(pSession->HwndTreeView, pSession->HwndParent, (LPPOINT)&pSession->RectClientOnParent, 2);
+	memcpy(&RectClientOnParent, &RectTree, sizeof(RECT));
+	MapWindowPoints(HwndTreeView, HwndParent, reinterpret_cast<LPPOINT>(&RectClientOnParent), 2);
 
 	// Set the border rect, we should resize it as needed, so we have to map it to the parent size
-	if ((pSession->CreateFlags & TREELIST_DRAW_EDGE) == TREELIST_DRAW_EDGE) {
+	if ((CreateFlags & TREELIST_DRAW_EDGE) == TREELIST_DRAW_EDGE) {
 
-		if ((pSession->UseAnchors == TRUE) && (pSession->GotAnchors == TRUE))
-			InvalidateRect(pSession->HwndParent, &pSession->RectBorder, TRUE); // Delete the prev border rect
+		if (UseAnchors && GotAnchors) {
+			InvalidateRect(HwndParent, &RectBorder, true); // Delete the prev border rect
+		}
 
-
-		memcpy(&pSession->RectBorder, &pSession->RectClientOnParent, sizeof(RECT));
+		memcpy(&RectBorder, &RectClientOnParent, sizeof(RECT));
 		// Check if we have vertical scrollbars
-		dwStyle = GetWindowLong(pSession->HwndTreeView, GWL_STYLE);
+		dwStyle = GetWindowLongPtr(HwndTreeView, GWL_STYLE);
 		if ((dwStyle & WS_VSCROLL) != 0)
 			iOffSet = GetSystemMetrics(SM_CXVSCROLL);
 
-		pSession->RectBorder.top = ((pSession->RectBorder.top - pSession->SizeHeader.Hight) - 5);
-		pSession->RectBorder.left -= 2;
-		pSession->RectBorder.right += 2 + iOffSet;
-		pSession->RectBorder.bottom += 2;
-		InvalidateRect(pSession->HwndParent, &pSession->RectBorder, FALSE);
+		RectBorder.top = ((RectBorder.top - SizeHeader.Hight) - 5);
+		RectBorder.left -= 2;
+		RectBorder.right += 2 + iOffSet;
+		RectBorder.bottom += 2;
+		InvalidateRect(HwndParent, &RectBorder, false);
 	}
 
 	// Anchors?
-	if (pSession->UseAnchors == TRUE) {
-		if (pSession->GotAnchors == FALSE) {
-			pSession->PointAnchors.x = pSession->RectParent.right - pSession->RectClientOnParent.right;
-			pSession->PointAnchors.y = pSession->RectParent.bottom - pSession->RectClientOnParent.bottom;
-			pSession->GotAnchors = TRUE;
+	if (UseAnchors) {
+		if (!GotAnchors) {
+			PointAnchors.x = RectParent.right - RectClientOnParent.right;
+			PointAnchors.y = RectParent.bottom - RectClientOnParent.bottom;
+			GotAnchors = true;
 		}
 	}
 
-	TreeList_Internal_DestroyEditBox(pSession);         // Kill the edit box, when moving and resizing items
-	TreeList_Internal_UpdateColumns(pSession);          // Update the columns sizes
-	TreeList_Internal_AutoSetLastColumn(pSession);      // Set the last col to be max size
+	TreeList_Internal_DestroyEditBox();         // Kill the edit box, when moving and resizing items
+	TreeList_Internal_UpdateColumns();          // Update the columns sizes
+	TreeList_Internal_AutoSetLastColumn();      // Set the last col to be max size
 
 
 }
@@ -1952,61 +1899,47 @@ int  TreeListDestroy(TREELIST_HANDLE ListTreeHandle) {
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
-TreeListError TreeListAddColumn(TREELIST_HANDLE ListTreeHandle, char *szColumnName, int Width) {
+TreeListError CTreeListView::AddColumn(const tstring& szColumnName, int Width) {
 
 
-	TreeListSession *pSession = (TreeListSession*)ListTreeHandle;
 
-	if (!pSession)
-		return e_ERROR_NO_SESSION;
-
-	if (pSession->ColumnsLocked == TRUE)
+	if (ColumnsLocked == TRUE)
 		return e_ERROR_COULD_NOT_ADD_COLUMN;
 
-	if (pSession->ColumnsCount >= TREELIST_MAX_COLUMNS)
+	if (ColumnsCount >= TREELIST_MAX_COLUMNS)
 		return e_ERROR_COULD_NOT_ADD_COLUMN;
 
-	// Allocate the pointers array
-	if (!pSession->pColumnsInfo) {
-		pSession->pColumnsInfo = (TreeListColumnInfo**)malloc((TREELIST_MAX_COLUMNS + 1) * sizeof(TreeListColumnInfo*));
-		if (!pSession->pColumnsInfo)
-			return e_ERROR_MEMORY_ALLOCATION;
-
-		pSession->AllocatedTreeBytes += ((TREELIST_MAX_COLUMNS + 1) * sizeof(TreeListColumnInfo*));
-
-	}
-
-	pSession->pColumnsInfo[pSession->ColumnsCount] = (TreeListColumnInfo*)malloc(sizeof(TreeListColumnInfo));
-	if (!pSession->pColumnsInfo[pSession->ColumnsCount])
+	
+	ColumnsInfo.push_back(new TreeListColumnInfo);
+	if (!ColumnsInfo[ColumnsCount])
 		return e_ERROR_MEMORY_ALLOCATION;
 
-	pSession->AllocatedTreeBytes += sizeof(TreeListColumnInfo);
-	memset(pSession->pColumnsInfo[pSession->ColumnsCount], 0, sizeof(TreeListColumnInfo));
-	strncpy(pSession->pColumnsInfo[pSession->ColumnsCount]->ColumnName, szColumnName, TREELIST_MAX_STRING);
-	pSession->pColumnsInfo[pSession->ColumnsCount]->Width = Width;
+	AllocatedTreeBytes += sizeof(TreeListColumnInfo);
+	memset(ColumnsInfo[ColumnsCount], 0, sizeof(TreeListColumnInfo));
+	ColumnsInfo[ColumnsCount]->ColumnName = szColumnName;
+	ColumnsInfo[ColumnsCount]->Width = Width;
 
-	memset(&pSession->HeaderItem, 0, sizeof(HDITEM));
-	pSession->HeaderItem.mask = HDI_WIDTH | HDI_FORMAT | HDI_TEXT;
-	pSession->HeaderItem.cxy = Width;
+	memset(&HeaderItem, 0, sizeof(HDITEM));
+	HeaderItem.mask = HDI_WIDTH | HDI_FORMAT | HDI_TEXT;
+	HeaderItem.cxy = Width;
 
 	if (Width == TREELIST_LAST_COLUMN) {
-		pSession->ColumnsLocked = TRUE;
-		pSession->HeaderItem.cxy = 100;
-		pSession->pColumnsInfo[pSession->ColumnsCount]->Width = pSession->HeaderItem.cxy;
+		ColumnsLocked = TRUE;
+		HeaderItem.cxy = 100;
+		ColumnsInfo[ColumnsCount]->Width = HeaderItem.cxy;
 
 	}
 
-	pSession->HeaderItem.fmt = HDF_CENTER;
-	pSession->HeaderItem.pszText = pSession->pColumnsInfo[pSession->ColumnsCount]->ColumnName;
-	pSession->HeaderItem.cchTextMax = strlen(pSession->pColumnsInfo[pSession->ColumnsCount]->ColumnName);
-	pSession->ColumnsTotalWidth += pSession->HeaderItem.cxy;
-	Header_InsertItem(pSession->HwndHeader, pSession->ColumnsCount, (LPARAM)&pSession->HeaderItem);
+	HeaderItem.fmt = HDF_CENTER;
+	HeaderItem.pszText = const_cast<LPTSTR>(ColumnsInfo[ColumnsCount]->ColumnName.c_str());
+	HeaderItem.cchTextMax = static_cast<int>(ColumnsInfo[ColumnsCount]->ColumnName.size());
+	ColumnsTotalWidth += HeaderItem.cxy;
+	Header_InsertItem(HwndHeader, ColumnsCount,reinterpret_cast<LPARAM>(&HeaderItem));
 
-	pSession->ColumnsCount++;
-	pSession->pColumnsInfo[pSession->ColumnsCount] = 0; // Null the next member
+	ColumnsCount++;
 
-	if (pSession->ColumnsLocked == TRUE)
-		TreeList_Internal_AutoSetLastColumn(pSession);
+	if (ColumnsLocked == TRUE)
+		TreeList_Internal_AutoSetLastColumn();
 
 	return e_ERROR_COULD_NOT_ADD_COLUMN;
 }
@@ -2036,7 +1969,7 @@ TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, TreeListNodeData
 	pNewNode = TreeList_Internal_AddNode(pParentNode);
 	if (pNewNode) {
 		for (Node = 0;Node <= ColumnsCount;Node++) {
-			if (!TreeList_Internal_NodeColonize(pSession, pNewNode, RowOfColumns + Node))
+			if (!TreeList_Internal_NodeColonize(pNewNode, RowOfColumns + Node))
 				return nullptr; // Could not add the columns data
 		}
 
