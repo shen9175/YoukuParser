@@ -25,97 +25,8 @@
 typedef HANDLE(CALLBACK* LPREMOVEPROP)(HWND, LPCTSTR);  // VC2010 issue
 
 
-														///////////////////////////////////////////////////////////////////////////////////////
-														//
-														//
-														// Internal tree data type
-														//
-														//
-														///////////////////////////////////////////////////////////////////////////////////////
-
-														// a single node (linked list) member
 
 
-
-
-
-///////////////////////////////////////////////////////////////
-// It's more convenient then RECT
-
-static struct tag_TreeListDimensions {
-
-	int                         X;
-	int                         Y;
-	int                         Width;
-	int                         Hight;
-};
-typedef struct tag_TreeListDimensions TreeListDimensions;
-
-
-///////////////////////////////////////////////////////////////
-// The is the session, the internal data for a control instance
-
-static struct tag_TreeListSession {
-
-
-	HINSTANCE                   InstanceParent;
-	HWND                        HwndParent;
-	HWND                        HwndTreeView;
-	HWND                        HwndHeader;
-	HWND                        HwndEditBox;
-	HFONT                       FontHandleTreeList;
-	HFONT                       FontHandleHeader;
-	HFONT                       FontHandleEdit;
-	LOGFONT                     FontInfoTreeList;
-	LOGFONT                     FontInfoHeader;
-	LOGFONT                     FontInfoEdit;
-	PAINTSTRUCT                 PaintStruct;
-	WNDPROC                     ProcEdit;
-	WNDPROC                     ProcTreeList;
-	WNDPROC                     ProcParent;
-	HDITEM                      HeaderItem;
-	HTREEITEM                   EditedTreeItem;
-	RECT                        RectParent;
-	RECT                        RectTree;
-	RECT                        RectHeader;
-	RECT                        RectRequested;
-	RECT                        RectBorder;
-	RECT                        RectClientOnParent;
-	HDC                         DCListView;
-	HDC                         DCHeader;
-	TVINSERTSTRUCT              TreeStruct;
-	TreeListDimensions          SizeTree;
-	TreeListDimensions          SizeHeader;
-	TreeListDimensions          SizeParent;
-	TreeListDimensions          SizeRequested;
-	TreeListDimensions          SizeEdit;
-	BOOL                        ColumnsLocked;
-	BOOL                        ColumnDoAutoAdjust;
-	BOOL                        WaitingForCaller;
-	BOOL                        UseFullSize;
-	BOOL                        UseAnchors;
-	BOOL                        GotAnchors;
-	BOOL                        ParentResizing;
-	BOOL                        ItemWasSelected;
-	DWORD                       EditBoxStyleNormal;
-	DWORD                       CreateFlags;
-	POINT                       PointAnchors;
-	int                         ColumnsCount;
-	int                         ColumnsTotalWidth;
-	int                         ColumnsFirstWidth;
-	int                         EditedColumn;
-	int                         AllocatedTreeBytes;
-	char                        EditBoxBuffer[TREELIST_MAX_STRING + 1];
-	char                        EditBoxOverrideBuffer[TREELIST_MAX_STRING + 1];
-	TreeListColumnInfo          **pColumnsInfo;
-	TreeListNode                *pRootNode;
-	TREELIST_CB                 *pCBValidateEdit;
-};
-
-
-typedef struct tag_TreeListSession TreeListSession;
-
-///////////////////////////////////////////////////////////////
 
 // Dictionary pointer that will hold the ref count and HWND for each instance of the control
 // a pointer to the dictionary will be attached to the parent window of the control.
@@ -123,64 +34,10 @@ typedef struct tag_TreeListSession TreeListSession;
 
 
 
-/////////////////////////////////////////////////////////////////
-// Visual Studeo 2010 Can't find RemoveProc so..
-static HINSTANCE hDllHandle;                    // Handle to DLL
-#if _MSC_VER > 1200
-static LPREMOVEPROP pRemoveProp = 0;        // Function pointer
-#else
-static LPREMOVEPROP pRemoveProp = RemoveProp;
-#endif
 
 
-///////////////////////////////////////////////////////////////////////////////////////
-//
-//
-// CRC32 Static tables
-//
-//
-///////////////////////////////////////////////////////////////////////////////////////
 
-static const unsigned long TreeListCRC32Table[] =
-{
-	0x00000000,0x77073096,0xEE0E612C,0x990951BA,0x076DC419,0x706AF48F,0xE963A535,
-	0x9E6495A3,0x0EDB8832,0x79DCB8A4,0xE0D5E91E,0x97D2D988,0x09B64C2B,0x7EB17CBD,
-	0xE7B82D07,0x90BF1D91,0x1DB71064,0x6AB020F2,0xF3B97148,0x84BE41DE,0x1ADAD47D,
-	0x6DDDE4EB,0xF4D4B551,0x83D385C7,0x136C9856,0x646BA8C0,0xFD62F97A,0x8A65C9EC,
-	0x14015C4F,0x63066CD9,0xFA0F3D63,0x8D080DF5,0x3B6E20C8,0x4C69105E,0xD56041E4,
-	0xA2677172,0x3C03E4D1,0x4B04D447,0xD20D85FD,0xA50AB56B,0x35B5A8FA,0x42B2986C,
-	0xDBBBC9D6,0xACBCF940,0x32D86CE3,0x45DF5C75,0xDCD60DCF,0xABD13D59,0x26D930AC,
-	0x51DE003A,0xC8D75180,0xBFD06116,0x21B4F4B5,0x56B3C423,0xCFBA9599,0xB8BDA50F,
-	0x2802B89E,0x5F058808,0xC60CD9B2,0xB10BE924,0x2F6F7C87,0x58684C11,0xC1611DAB,
-	0xB6662D3D,0x76DC4190,0x01DB7106,0x98D220BC,0xEFD5102A,0x71B18589,0x06B6B51F,
-	0x9FBFE4A5,0xE8B8D433,0x7807C9A2,0x0F00F934,0x9609A88E,0xE10E9818,0x7F6A0DBB,
-	0x086D3D2D,0x91646C97,0xE6635C01,0x6B6B51F4,0x1C6C6162,0x856530D8,0xF262004E,
-	0x6C0695ED,0x1B01A57B,0x8208F4C1,0xF50FC457,0x65B0D9C6,0x12B7E950,0x8BBEB8EA,
-	0xFCB9887C,0x62DD1DDF,0x15DA2D49,0x8CD37CF3,0xFBD44C65,0x4DB26158,0x3AB551CE,
-	0xA3BC0074,0xD4BB30E2,0x4ADFA541,0x3DD895D7,0xA4D1C46D,0xD3D6F4FB,0x4369E96A,
-	0x346ED9FC,0xAD678846,0xDA60B8D0,0x44042D73,0x33031DE5,0xAA0A4C5F,0xDD0D7CC9,
-	0x5005713C,0x270241AA,0xBE0B1010,0xC90C2086,0x5768B525,0x206F85B3,0xB966D409,
-	0xCE61E49F,0x5EDEF90E,0x29D9C998,0xB0D09822,0xC7D7A8B4,0x59B33D17,0x2EB40D81,
-	0xB7BD5C3B,0xC0BA6CAD,0xEDB88320,0x9ABFB3B6,0x03B6E20C,0x74B1D29A,0xEAD54739,
-	0x9DD277AF,0x04DB2615,0x73DC1683,0xE3630B12,0x94643B84,0x0D6D6A3E,0x7A6A5AA8,
-	0xE40ECF0B,0x9309FF9D,0x0A00AE27,0x7D079EB1,0xF00F9344,0x8708A3D2,0x1E01F268,
-	0x6906C2FE,0xF762575D,0x806567CB,0x196C3671,0x6E6B06E7,0xFED41B76,0x89D32BE0,
-	0x10DA7A5A,0x67DD4ACC,0xF9B9DF6F,0x8EBEEFF9,0x17B7BE43,0x60B08ED5,0xD6D6A3E8,
-	0xA1D1937E,0x38D8C2C4,0x4FDFF252,0xD1BB67F1,0xA6BC5767,0x3FB506DD,0x48B2364B,
-	0xD80D2BDA,0xAF0A1B4C,0x36034AF6,0x41047A60,0xDF60EFC3,0xA867DF55,0x316E8EEF,
-	0x4669BE79,0xCB61B38C,0xBC66831A,0x256FD2A0,0x5268E236,0xCC0C7795,0xBB0B4703,
-	0x220216B9,0x5505262F,0xC5BA3BBE,0xB2BD0B28,0x2BB45A92,0x5CB36A04,0xC2D7FFA7,
-	0xB5D0CF31,0x2CD99E8B,0x5BDEAE1D,0x9B64C2B0,0xEC63F226,0x756AA39C,0x026D930A,
-	0x9C0906A9,0xEB0E363F,0x72076785,0x05005713,0x95BF4A82,0xE2B87A14,0x7BB12BAE,
-	0x0CB61B38,0x92D28E9B,0xE5D5BE0D,0x7CDCEFB7,0x0BDBDF21,0x86D3D2D4,0xF1D4E242,
-	0x68DDB3F8,0x1FDA836E,0x81BE16CD,0xF6B9265B,0x6FB077E1,0x18B74777,0x88085AE6,
-	0xFF0F6A70,0x66063BCA,0x11010B5C,0x8F659EFF,0xF862AE69,0x616BFFD3,0x166CCF45,
-	0xA00AE278,0xD70DD2EE,0x4E048354,0x3903B3C2,0xA7672661,0xD06016F7,0x4969474D,
-	0x3E6E77DB,0xAED16A4A,0xD9D65ADC,0x40DF0B66,0x37D83BF0,0xA9BCAE53,0xDEBB9EC5,
-	0x47B2CF7F,0x30B5FFE9,0xBDBDF21C,0xCABAC28A,0x53B39330,0x24B4A3A6,0xBAD03605,
-	0xCDD70693,0x54DE5729,0x23D967BF,0xB3667A2E,0xC4614AB8,0x5D681B02,0x2A6F2B94,
-	0xB40BBE37,0xC30C8EA1,0x5A05DF1B,0x2D02EF8D
-};
+
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //
@@ -189,8 +46,7 @@ static const unsigned long TreeListCRC32Table[] =
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static unsigned long TreeList_Internal_CRCCreate(const void *buf,
-	unsigned long bufLen) {
+unsigned long CTreeListView::TreeList_Internal_CRCCreate(const void *buf,	unsigned long bufLen) {
 	unsigned long   crc32;
 	unsigned long   i;
 	unsigned char   *byteBuf;
@@ -217,15 +73,10 @@ static unsigned long TreeList_Internal_CRCCreate(const void *buf,
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static int TreeList_Internal_CRCCheck(const void *buf,
-	unsigned long bufLen,
-	unsigned long crc32) {
-
-
+int CTreeListView::TreeList_Internal_CRCCheck(const void *buf,	unsigned long bufLen,unsigned long crc32) {
 	if (TreeList_Internal_CRCCreate(buf, bufLen) == crc32) {
 		return 1;
 	}
-
 	return 0;
 }
 
@@ -242,39 +93,36 @@ static int TreeList_Internal_CRCCheck(const void *buf,
 static void *TreeList_Internal_DictGetPtr(HWND hWndParent, HWND hWndAny) {
 
 
-	int iCount = 0;
-	int iElement = 0;
 	HWND hParent = hWndParent;
 
-	TreeListDict *pTreeListDict = 0;
-	TreeListSession *pSession = 0;
-
+	TreeListDict *pTreeListDict = nullptr;
+	
 	if (!hWndParent)
 		hParent = GetParent(hWndAny);
 
 	pTreeListDict = (TreeListDict*)GetProp(hParent, TREELIST_PROP_VAL); // Extract the dict pointer
 	if (!pTreeListDict)
-		return 0; // No pointr attached to the window handler or no instances
+		return nullptr; // No pointr attached to the window handler or no instances
 
 	if (!hWndAny)
-		return (void*)pTreeListDict;
+		return reinterpret_cast<void*>(pTreeListDict);
 
 	if (pTreeListDict->ReferenceCount == 0)
-		return 0;
+		return nullptr;
 
-	for (iCount = 0;iCount<TREELIST_MAX_INSTANCES;iCount++) {
+	for (int iCount = 0; iCount < pTreeListDict->HwndInstances.size(); iCount++) {
 
-		for (iElement = 0;iElement < TREELIST_ELEMENTS_PER_INSTANCE;iElement++) {
+		for (int iElement = 0; iElement < pTreeListDict->HwndInstances[iCount].size();iElement++) {
 			if (pTreeListDict->HwndInstances[iCount][iElement] == hWndAny) {
-				if (pTreeListDict->pSessionPtr[iCount])
-					return (void*)pTreeListDict->pSessionPtr[iCount];
+				if (pTreeListDict->SessionPtr[iCount])
+					return reinterpret_cast<void*>(pTreeListDict->SessionPtr[iCount]);
 
 			}
 		}
 
 	}
 
-	return 0;
+	return nullptr;
 }
 
 
@@ -288,9 +136,6 @@ static void *TreeList_Internal_DictGetPtr(HWND hWndParent, HWND hWndAny) {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 bool TreeList_Internal_DictUpdate(bool Clear, CTreeListView* pSession, HWND hWndParent, HWND hWndAny) {
-
-
-	
 	
 	HWND hParent = hWndParent;
 	int iNullsCount = 0;
@@ -309,7 +154,7 @@ bool TreeList_Internal_DictUpdate(bool Clear, CTreeListView* pSession, HWND hWnd
 		if (!pTreeListDict) {
 			// Allocate and attach
 			pTreeListDict = new TreeListDict;
-			memset(pTreeListDict, 0, sizeof(TreeListDict));
+			std::memset(pTreeListDict, 0, sizeof(TreeListDict));
 			if (SetProp(hParent, TREELIST_PROP_VAL, pTreeListDict) == false)
 				return false;
 
@@ -357,7 +202,7 @@ bool TreeList_Internal_DictUpdate(bool Clear, CTreeListView* pSession, HWND hWnd
 				for (int iElement = 0;iElement < pTreeListDict->HwndInstances[iCount].size();iElement++) {
 
 					if (pTreeListDict->HwndInstances[iCount][iElement] == hWndAny) {
-						pTreeListDict->HwndInstances[iCount].erase(pTreeListDict->HwndInstances[iCount].cbegin() + iElement);
+						pTreeListDict->HwndInstances[iCount].erase(pTreeListDict->HwndInstances[iCount].begin() + iElement);
 						break;
 					}
 				}
@@ -370,18 +215,18 @@ bool TreeList_Internal_DictUpdate(bool Clear, CTreeListView* pSession, HWND hWnd
 					pTreeListDict->HwndParent[0] = 0;
 					pTreeListDict->ReferenceCount--;
 					if (pTreeListDict->ReferenceCount == 0) {
-						free(pTreeListDict);
+						delete pTreeListDict;
 						pRemoveProp(hParent, TREELIST_PROP_VAL);
 						if (hDllHandle)
 							FreeLibrary(hDllHandle);
 					}
 				}
 
-				return TRUE;
+				return true;
 			}
 		}
 
-		return FALSE;
+		return false;
 	}
 }
 
@@ -399,8 +244,8 @@ void CTreeListView::TreeList_Internal_DestroyEditBox() {
 				// Close edit box, when moving and resizing items
 	if (HwndEditBox) {
 
-		TreeList_Internal_DictUpdate(TRUE, pSession, NULL, pSession->HwndEditBox);
-		SetWindowLongPtr(HwndEditBox, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(pSession->ProcEdit)); // Restore the original wnd proc to the parent
+		TreeList_Internal_DictUpdate(true, this, nullptr, HwndEditBox);
+		SetWindowLongPtr(HwndEditBox, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(ProcEdit)); // Restore the original wnd proc to the parent
 		DestroyWindow(HwndEditBox);
 		HwndEditBox = 0;
 		EditedTreeItem = 0;
@@ -422,7 +267,7 @@ TreeListNode* CTreeListView::TreeList_Internal_NodeCreateNew() {
 
 	pTmpNode = new TreeListNode;
 	if (pTmpNode) {
-		memset(pTmpNode, 0, sizeof(TreeListNode));
+		std::memset(pTmpNode, 0, sizeof(TreeListNode));
 		AllocatedTreeBytes += sizeof(TreeListNode);
 		pTmpNode->pNodeData.resize(ColumnsCount);
 	}
@@ -609,10 +454,10 @@ void CTreeListView::TreeList_Internal_NodeFreeAllSubNodes(TreeListNode *pNode) {
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static TreeListDimensions* TreeList_Internal_RectToDimensions(RECT *pRect, TreeListDimensions *pDimensions) {
+TreeListDimensions* CTreeListView::TreeList_Internal_RectToDimensions(RECT *pRect, TreeListDimensions *pDimensions) {
 
 	if ((!pRect) || (!pDimensions))
-		return 0;
+		return nullptr;
 
 	pDimensions->Width = pRect->right - pRect->left;
 	pDimensions->Hight = pRect->bottom - pRect->top;
@@ -646,7 +491,7 @@ void CTreeListView::TreeList_Internal_AutoSetLastColumn() {
 	GetClientRect(HwndHeader, &RectHeader);
 
 	// Get column width from the header control
-	memset(&HeaderItem, 0, sizeof(HDITEM));
+	std::memset(&HeaderItem, 0, sizeof(HDITEM));
 	HeaderItem.mask = HDI_WIDTH;
 
 	ColumnsCount = Header_GetItemCount(HwndHeader);;
@@ -658,7 +503,7 @@ void CTreeListView::TreeList_Internal_AutoSetLastColumn() {
 		StartPosition = ColumnsTotalWidth - Width;
 		NewWidth = (RectHeader.right - RectHeader.left) - StartPosition + 2;
 
-		memset(&HeaderItem, 0, sizeof(HDITEM));
+		std::memset(&HeaderItem, 0, sizeof(HDITEM));
 
 		HeaderItem.mask = HDI_WIDTH;
 		HeaderItem.cxy = NewWidth;
@@ -834,25 +679,23 @@ void CTreeListView::TreeList_Internal_RepositionControls() {
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static TreeListNode *TreeList_Internal_GetNodeFromTreeHandle(TreeListSession *pSession, HTREEITEM hTreeItem) {
+TreeListNode* CTreeListView::TreeList_Internal_GetNodeFromTreeHandle(HTREEITEM hTreeItem) {
 
 
 	TVITEM              TreeItem;
-	TreeListNode        *pNode = 0;
+	TreeListNode        *pNode = nullptr;
 	int                 Node;
 
-	if (!pSession)
-		return 0; // No session
 
 	memset(&TreeItem, 0, sizeof(TreeItem)); // Set all items to 0
 
 	TreeItem.mask = TVIF_HANDLE;
 	TreeItem.hItem = hTreeItem;
 
-	if (TreeView_GetItem(pSession->HwndTreeView, &TreeItem) == FALSE)
-		return 0;
+	if (TreeView_GetItem(HwndTreeView, &TreeItem) == false)
+		return nullptr;
 
-	pNode = (NODE_HANDLE)TreeItem.lParam;
+	pNode = reinterpret_cast<TreeListNode*>(TreeItem.lParam);
 
 	// Check the node(s) integrity
 	for (Node = 0;Node < pNode->NodeDataCount;Node++) {
@@ -875,10 +718,10 @@ static TreeListNode *TreeList_Internal_GetNodeFromTreeHandle(TreeListSession *pS
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static RECT *TreeList_Internal_DeflateRect(RECT *pRect, int left, int top, int right, int bottom) {
+RECT* CTreeListView::TreeList_Internal_DeflateRect(RECT *pRect, int left, int top, int right, int bottom) {
 
 	if (!pRect)
-		return 0;
+		return nullptr;
 
 	pRect->bottom -= bottom;
 	pRect->right -= right;
@@ -898,7 +741,7 @@ static RECT *TreeList_Internal_DeflateRect(RECT *pRect, int left, int top, int r
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-static RECT *TreeList_Internal_DeflateRectEx(RECT *pRect, int x, int y) {
+RECT* CTreeListView::TreeList_Internal_DeflateRectEx(RECT *pRect, int x, int y) {
 
 	if (!pRect)
 		return 0;
@@ -1607,163 +1450,114 @@ static LRESULT TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg, WPARAM 
 //
 ////////////////////////////////////////////////////////////////////////////////////
 
-TREELIST_HANDLE TreeListCreate(HINSTANCE Instance, HWND Hwnd, RECT *pRect, DWORD dwFlags, TREELIST_CB *pFunc) {
+CTreeListView::CTreeListView(HINSTANCE Instance, HWND Hwnd, RECT *pRect, DWORD dwFlags, TREELIST_CB *pFunc) {
 
-	TreeListSession     *pSession = 0;
-	BOOL                Error = FALSE;
-	BOOL                PrevInstance = FALSE;
+	
+	BOOL                Error = false;
+	BOOL                PrevInstance = false;
 
 	if ((Hwnd == 0) || (Instance == 0))
-		return TREELIST_INVLID_HANDLE;
+		return ;
 
-	// Couldn't make VC2010 link with RemoveProp, didn't have the time to figure out why, so..
-#if _MSC_VER > 1200
-	if (!hDllHandle) {
-		hDllHandle = LoadLibrary("user32.dll");
-		if (hDllHandle != NULL) {
-			pRemoveProp = (LPREMOVEPROP)GetProcAddress(hDllHandle, "RemovePropA");
-			if (!pRemoveProp) {
-				// handle the error
-				FreeLibrary(hDllHandle);
-				return TREELIST_INVLID_HANDLE;
-			}
-		}
-	}
-#endif
 
-	pSession = (TreeListSession*)malloc(sizeof(TreeListSession));
-	if (!pSession)
-		return TREELIST_INVLID_HANDLE;
 
-	memset(pSession, 0, sizeof(TreeListSession));
-	pSession->AllocatedTreeBytes = sizeof(TreeListSession);
-
-	pSession->InstanceParent = Instance;
-	pSession->HwndParent = Hwnd;
+	InstanceParent = Instance;
+	HwndParent = Hwnd;
 
 	// This essentoal for the tree view
 
 	// Do we have a prev instance?
-	if (TreeList_Internal_DictGetPtr(Hwnd, NULL))
-		PrevInstance = TRUE;
+	if (TreeList_Internal_DictGetPtr(Hwnd, nullptr))
+		PrevInstance = true;
 
-	if (PrevInstance == FALSE)
+	if (PrevInstance == false)
 		InitCommonControls();
 	do {
 
 		// Create a font for the TreeList control
-		pSession->FontHandleTreeList = CreateFont(14, 0, 0, 0, 500, FALSE, FALSE, FALSE,
-			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-			CLIP_CHARACTER_PRECIS, PROOF_QUALITY,
-			FF_DONTCARE, "Courier");
+		FontHandleTreeList = CreateFont(14, 0, 0, 0, 500, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_CHARACTER_PRECIS, PROOF_QUALITY, FF_DONTCARE, TEXT("Courier"));
 
 		// Create a font for the Header control
-		pSession->FontHandleHeader = CreateFont(16, 0, 0, 0, 700, FALSE, FALSE, FALSE, // 700 = Bold font
-			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-			CLIP_CHARACTER_PRECIS, PROOF_QUALITY,
-			FF_DONTCARE, "Arial");
+		FontHandleHeader = CreateFont(16, 0, 0, 0, 700, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_CHARACTER_PRECIS, PROOF_QUALITY, FF_DONTCARE, TEXT("Arial"));
 
 		// Create a font for the edit box
-		pSession->FontHandleEdit = CreateFont(14, 0, 0, 0, 500, FALSE, FALSE, FALSE,
-			DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-			CLIP_CHARACTER_PRECIS, PROOF_QUALITY,
-			FF_DONTCARE, "Courier");
+		FontHandleEdit = CreateFont(14, 0, 0, 0, 500, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_CHARACTER_PRECIS, PROOF_QUALITY, FF_DONTCARE, TEXT("Courier"));
 
 
 		// Check that we got the fonts
-		if ((pSession->FontHandleTreeList == NULL) || (pSession->FontHandleHeader == NULL) || (pSession->FontHandleEdit == NULL)) {
-			Error = TRUE;
+		if ((FontHandleTreeList == nullptr) || (FontHandleHeader == nullptr) || (FontHandleEdit == nullptr)) {
+			Error = true;
 			break;
 		}
 		// Get the fonts info
-		GetObject(pSession->FontHandleTreeList, sizeof(LOGFONT), &pSession->FontInfoTreeList);
-		GetObject(pSession->FontHandleHeader, sizeof(LOGFONT), &pSession->FontInfoHeader);
-		GetObject(pSession->FontHandleEdit, sizeof(LOGFONT), &pSession->FontInfoEdit);
+		GetObject(FontHandleTreeList, sizeof(LOGFONT), &FontInfoTreeList);
+		GetObject(FontHandleHeader, sizeof(LOGFONT), &FontInfoHeader);
+		GetObject(FontHandleEdit, sizeof(LOGFONT), &FontInfoEdit);
 
 		if (pRect) // User provided a control rect
-			memcpy(&pSession->RectRequested, pRect, sizeof(RECT));
+			memcpy(&RectRequested, pRect, sizeof(RECT));
 
 		else
-			pSession->UseFullSize = TRUE;
+			UseFullSize = true;
 
 
 		// Create the list View and the header
-		pSession->HwndTreeView = CreateWindowEx(0,                                  // Extended styles
-			WC_TREEVIEW,                                                            // Control 'class' name
-			0,                                                                      // Control caption
-			WS_CHILD | WS_VISIBLE | TVS_FULLROWSELECT | TVS_NOHSCROLL | TVS_NOTOOLTIPS | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT,
-			0, 0, 0, 0,                                                                // Position
-			pSession->HwndParent,                                                   // Parent window handle
-			0,                                                                      // Control's ID
-			pSession->InstanceParent,                                               // Instance
-			0);                                                                     // User defined info
+		HwndTreeView = CreateWindowEx(0, WC_TREEVIEW, 0, WS_CHILD | WS_VISIBLE | TVS_FULLROWSELECT | TVS_NOHSCROLL | TVS_NOTOOLTIPS | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT, 0, 0, 0, 0, HwndParent, 0, InstanceParent, 0);
 
-		if (!pSession->HwndTreeView) {
-			Error = TRUE;
+		if (!HwndTreeView) {
+			Error = true;
 			break;
 		}
 
 
-		TreeList_Internal_DictUpdate(FALSE, pSession, pSession->HwndParent, pSession->HwndTreeView);
-		SendMessage(pSession->HwndTreeView, WM_SETFONT, (WPARAM)pSession->FontHandleTreeList, (LPARAM)TRUE);
-		pSession->ProcTreeList = (WNDPROC)SetWindowLongPtr(pSession->HwndTreeView, GWLP_WNDPROC, (LONG)TreeList_Internal_HandleTreeMessagesEx); // Sub classing the control
+		TreeList_Internal_DictUpdate(false, this, HwndParent, HwndTreeView);
+		SendMessage(HwndTreeView, WM_SETFONT, reinterpret_cast<WPARAM>(FontHandleTreeList), static_cast<LPARAM>(true));
+		ProcTreeList = reinterpret_cast<WNDPROC>(SetWindowLongPtr(HwndTreeView, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(TreeList_Internal_HandleTreeMessagesEx))); // Sub classing the control
 
 																																				// Sub class the parent window
-		if (PrevInstance == FALSE) {
-			pSession->ProcParent = (WNDPROC)SetWindowLongPtr(pSession->HwndParent, GWLP_WNDPROC, (LONG)TreeList_Internal_HandleTreeMessages); // Sub classing the control
-			SetProp(pSession->HwndParent, "WNDPROC", pSession->ProcParent);
+		if (PrevInstance == false) {
+			ProcParent = reinterpret_cast<WNDPROC>(SetWindowLongPtr(HwndParent, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(TreeList_Internal_HandleTreeMessages))); // Sub classing the control
+			SetProp(HwndParent, TEXT("WNDPROC"), ProcParent);
 		}
 
-		pSession->HwndHeader = CreateWindowEx(0,                                    // Extended styles
-			WC_HEADER,                                                              // Control 'class' name
-			0,                                                                      // Control caption
-			WS_CHILD | WS_VISIBLE | HDS_FULLDRAG,                                   // Win style
-			0, 0, 0, 0,                                                                // Position
-			pSession->HwndParent,                                                   // Parent window handle
-			0,                                                                      // Control's ID
-			pSession->InstanceParent,                                               // Instance
-			0);                                                                     // User defined info
+		HwndHeader = CreateWindowEx(0, WC_HEADER, 0, WS_CHILD | WS_VISIBLE | HDS_FULLDRAG, 0, 0, 0, 0, HwndParent, 0, InstanceParent, 0);
 
-		if (!pSession->HwndTreeView) {
-			Error = TRUE;
+		if (!HwndTreeView) {
+			Error = true;
 			break;
 		}
 
-		TreeList_Internal_DictUpdate(FALSE, pSession, pSession->HwndParent, pSession->HwndHeader);
-		SendMessage(pSession->HwndHeader, WM_SETFONT, (WPARAM)pSession->FontHandleHeader, (LPARAM)TRUE);
+		TreeList_Internal_DictUpdate(false, this, HwndParent, HwndHeader);
+		SendMessage(HwndHeader, WM_SETFONT, reinterpret_cast<WPARAM>(FontHandleHeader), static_cast<LPARAM>(true));
 
 	} while (0);
 
-	if (Error == TRUE) {
-		if (pSession) {
-			if (pSession->FontHandleTreeList)
-				DeleteObject(pSession->FontHandleTreeList);
-			if (pSession->FontHandleHeader)
-				DeleteObject(pSession->FontHandleHeader);
-			if (pSession->FontHandleEdit)
-				DeleteObject(pSession->FontHandleEdit);
-			free(pSession);
-		}
-		return TREELIST_INVLID_HANDLE;
-
+	if (Error) {
+		if (FontHandleTreeList)
+			DeleteObject(FontHandleTreeList);
+		if (FontHandleHeader)
+			DeleteObject(FontHandleHeader);
+		if (FontHandleEdit)
+			DeleteObject(FontHandleEdit);
+		return;
 	}
 
 	if (pFunc)
-		pSession->pCBValidateEdit = pFunc;
+		pCBValidateEdit = pFunc;
 
-	pSession->CreateFlags = dwFlags;
-	if (((pSession->CreateFlags & TREELIST_ANCHOR_RIGHT) == TREELIST_ANCHOR_RIGHT) || ((pSession->CreateFlags & TREELIST_ANCHOR_BOTTOM) == TREELIST_ANCHOR_BOTTOM))
-		pSession->UseAnchors = TRUE;
+	CreateFlags = dwFlags;
+	if ((CreateFlags & TREELIST_ANCHOR_RIGHT) == TREELIST_ANCHOR_RIGHT) || ((CreateFlags & TREELIST_ANCHOR_BOTTOM) == TREELIST_ANCHOR_BOTTOM)) {
+		UseAnchors = true;
+	}
+
 
 	// Edit box style
-	if ((pSession->CreateFlags & TREELIST_NORMAL_EDITBOX) == TREELIST_NORMAL_EDITBOX)
-		pSession->EditBoxStyleNormal = TRUE;
+	if ((CreateFlags & TREELIST_NORMAL_EDITBOX) == TREELIST_NORMAL_EDITBOX)
+		EditBoxStyleNormal = true;
 
-	TreeView_SetBkColor(pSession->HwndTreeView, RGB(255, 255, 255));
-	TreeView_SetTextColor(pSession->HwndTreeView, RGB(0, 0, 0));
-	TreeList_Internal_RepositionControls(pSession);
-
-	return (TREELIST_HANDLE)pSession;
+	TreeView_SetBkColor(HwndTreeView, RGB(255, 255, 255));
+	TreeView_SetTextColor(HwndTreeView, RGB(0, 0, 0));
+	TreeList_Internal_RepositionControls();
 }
 
 
@@ -1796,25 +1590,25 @@ CTreeListView::~CTreeListView() {
 
 												// Kill the header window
 	if (HwndHeader) {
-		TreeList_Internal_DictUpdate(TRUE, pSession, NULL, pSession->HwndHeader);
+		TreeList_Internal_DictUpdate(true, this, NULL, HwndHeader);
 		DestroyWindow(HwndHeader);
 
 	}
 
 	// Kill the TreeView main window
 	if (HwndTreeView) {
-		TreeList_Internal_DictUpdate(TRUE, pSession, NULL, pSession->HwndTreeView);
-		(WNDPROC)SetWindowLongPtr(pSession->HwndParent, GWLP_WNDPROC, (LONG)pSession->ProcParent); // Restore the original wnd proc to the parent
-		pRemoveProp(pSession->HwndParent, TEXT("WNDPROC"));
-		DestroyWindow(pSession->HwndTreeView);;
+		TreeList_Internal_DictUpdate(true, this, nullptr, HwndTreeView);
+		SetWindowLongPtr(HwndParent, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(ProcParent)); // Restore the original wnd proc to the parent
+		pRemoveProp(HwndParent, TEXT("WNDPROC"));
+		DestroyWindow(HwndTreeView);
 	}
 
 
 
 	// Free all the nodes
-	TreeList_Internal_NodeFreeAllSubNodes(pSession, pSession->pRootNode);
+	TreeList_Internal_NodeFreeAllSubNodes(pRootNode);
 	AllocatedBytes = AllocatedTreeBytes;
-	InvalidateRect(pSession->HwndParent, &pSession->RectParent, TRUE);
+	InvalidateRect(HwndParent, &RectParent, true);
 
 
 	assert(!AllocatedBytes);
@@ -1824,68 +1618,7 @@ CTreeListView::~CTreeListView() {
 
 
 
-int  TreeListDestroy(TREELIST_HANDLE ListTreeHandle) {
 
-	int iCol;
-	int AllocatedBytes;
-	TreeListSession *pSession = (TreeListSession*)ListTreeHandle;
-
-	if (!pSession)
-		return e_ERROR_NO_SESSION;
-
-	// Kill windows objects
-	if (pSession->FontHandleTreeList)
-		DeleteObject(pSession->FontHandleTreeList);
-	if (pSession->FontHandleHeader)
-		DeleteObject(pSession->FontHandleHeader);
-	if (pSession->FontHandleEdit)
-		DeleteObject(pSession->FontHandleEdit);
-
-
-	TreeList_Internal_DestroyEditBox(pSession); // Kill the edit box
-
-												// Kill the header window
-	if (pSession->HwndHeader) {
-		TreeList_Internal_DictUpdate(TRUE, pSession, NULL, pSession->HwndHeader);
-		DestroyWindow(pSession->HwndHeader);
-
-	}
-
-	// Kill the TreeView main window
-	if (pSession->HwndTreeView) {
-		TreeList_Internal_DictUpdate(TRUE, pSession, NULL, pSession->HwndTreeView);
-		(WNDPROC)SetWindowLongPtr(pSession->HwndParent, GWLP_WNDPROC, (LONG)pSession->ProcParent); // Restore the original wnd proc to the parent
-		pRemoveProp(pSession->HwndParent, "WNDPROC");
-		DestroyWindow(pSession->HwndTreeView);;
-	}
-
-	// Free all the columns
-	for (iCol = 0;iCol < pSession->ColumnsCount;iCol++) {
-		if (pSession->pColumnsInfo[iCol]) {
-			free(pSession->pColumnsInfo[iCol]);
-			pSession->pColumnsInfo[iCol] = 0;
-			pSession->AllocatedTreeBytes -= sizeof(TreeListColumnInfo);
-		}
-	}
-
-	if (pSession->pColumnsInfo) {
-		free(pSession->pColumnsInfo);
-		pSession->AllocatedTreeBytes -= ((TREELIST_MAX_COLUMNS + 1) * sizeof(TreeListColumnInfo*));
-
-	}
-
-	// Free all the nodes
-	TreeList_Internal_NodeFreeAllSubNodes(pSession, pSession->pRootNode);
-	AllocatedBytes = pSession->AllocatedTreeBytes;
-	InvalidateRect(pSession->HwndParent, &pSession->RectParent, TRUE);
-	free(pSession);
-	pSession = 0;
-
-	// At this point we can expect that this little counter would be 0
-	AllocatedBytes -= sizeof(TreeListSession);
-
-	return AllocatedBytes; //Should be e_OK == 0!
-}
 
 ////////////////////////////////////////////////////////////////////////////////////
 //
