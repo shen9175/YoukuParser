@@ -42,6 +42,8 @@ public:
 	void SetIconSmall(const HICON& iconsm) { wndclass.hIconSm = iconsm; }
 	void SetcxChar(const int& x) { cxChar = x; }
 	void SetcyChar(const int& y) { cyChar = y; }
+	void Show() { ShowWindow(hwnd, SW_SHOW); }
+	void Hide() { ShowWindow(hwnd, SW_HIDE); }
 	bool SetFont(int nHeight, int nWidth, int nEscapement, int nOrientation, int fnWeight, DWORD fdwItalic, DWORD fdwUnderline, DWORD fdwStrikeOut, DWORD fdwCharSet, DWORD fdwOutputPrecision, DWORD fdwClipPrecision, DWORD   fdwQuality, DWORD fdwPitchAndFamily, LPCTSTR lpszFace);
 protected:
 
@@ -168,4 +170,8 @@ public:
 private:
 	static LRESULT CALLBACK StaticDialogProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 	bool DialogProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
+};
+
+class CImageList : public CControl {
+
 };

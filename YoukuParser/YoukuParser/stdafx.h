@@ -133,6 +133,7 @@ struct DownloadFactors {
 #include "json11.hpp"
 #include "utilities.h"
 #include "flv_joiner.h"
+#include "window.h"
 #include "TreeListView.h"
 using namespace json11;
 
@@ -142,7 +143,6 @@ using namespace json11;
 #include "speedometer.h"
 #include "http.h"
 #include "parser.h"
-#include "window.h"
 #include "YoukuWindow.h"
 #include "YoukuParser.h"
 extern CRITICAL_SECTION cs;
