@@ -55,16 +55,14 @@ typedef enum {
 // Section  : NodeData struct
 //
 ///////////////////////////////////////////////////////////////////////////////////////
-
+enum NodeDataType { IMAGELIST, HWINDOW, TEXT } ;
 struct TreeListNodeData {
 	tstring                     text;
 	CImageList*					pimagelist;
 	CWnd*						pWindow;
-	bool						bText;
+	NodeDataType				type;
 	bool                        Editable;
 	bool                        Numeric;
-	bool						bImageList;
-	bool						bWnd;
 	void                        *pExternalPtr;
 	bool                        Colored;
 	COLORREF                    BackgroundColor;

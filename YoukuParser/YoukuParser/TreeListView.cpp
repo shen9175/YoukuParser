@@ -1036,11 +1036,11 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 				DrawEdge(hDC, &RectItem, BDR_SUNKENINNER, BF_BOTTOM);
 
 				// Draw Label, calculate the rect first
-				if (pNode->pNodeData[0]->bText) {
+				if (pNode->pNodeData[0]->type == TEXT) {
 					DrawText(hDC, pNode->pNodeData[0]->text.c_str(), static_cast<int>(pNode->pNodeData[0]->text.size()), &RectText, DT_NOPREFIX | DT_CALCRECT);
-				} else if (pNode->pNodeData[0]->bImageList) {
+				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
 
-				} else if (pNode->pNodeData[0]->bWnd) {
+				} else if (pNode->pNodeData[0]->type == HWINDOW) {
 					pNode->pNodeData[0]->pWindow->CMoveWindow(RectText.left, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
 					pNode->pNodeData[0]->pWindow->Show();
 				}
@@ -1072,11 +1072,11 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 				RectText.right = RectHeaderItem.right; // Set the right side
 				TreeList_Internal_DeflateRectEx(&RectText, 2, 1); // Defalate it
 
-				if (pNode->pNodeData[0]->bText) {
+				if (pNode->pNodeData[0]->type == TEXT) {
 					DrawText(hDC, pNode->pNodeData[0]->text.c_str(), static_cast<int>(pNode->pNodeData[0]->text.size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
-				} else if (pNode->pNodeData[0]->bImageList) {
+				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
 
-				} else if (pNode->pNodeData[0]->bWnd) {
+				} else if (pNode->pNodeData[0]->type == HWINDOW) {
 					pNode->pNodeData[0]->pWindow->CMoveWindow(RectText.left, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
 					pNode->pNodeData[0]->pWindow->Show();
 				}
@@ -1120,11 +1120,11 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 
 							}
 
-							if (pNode->pNodeData[iCol]->bText) {
+							if (pNode->pNodeData[iCol]->type == TEXT) {
 								DrawText(hDC, pNode->pNodeData[iCol]->text.c_str(), static_cast<int>(pNode->pNodeData[iCol]->text.size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
-							} else if (pNode->pNodeData[iCol]->bImageList) {
+							} else if (pNode->pNodeData[iCol]->type == IMAGELIST) {
 
-							} else if (pNode->pNodeData[iCol]->bWnd) {
+							} else if (pNode->pNodeData[iCol]->type == HWINDOW) {
 								pNode->pNodeData[iCol]->pWindow->CMoveWindow(RectText.left, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
 								pNode->pNodeData[iCol]->pWindow->Show();
 							}
@@ -1544,6 +1544,14 @@ TreeListError CTreeListView::AddColumn(const tstring& szColumnName, int Width) {
 	return e_ERROR_COULD_NOT_ADD_COLUMN;
 }
 
+template<NodeDataType, typename T> void CTreeListView::AddRowHelper(NodeDataType type, T data) {
+
+}
+
+template<NodeDataType, typename T, typename ...Args> void  CTreeListView::TreeListAddRow(TreeListNode* ParentNode, bool Editable, long Color, void *pAnyPtr, NodeDataType columnType, T columnData, Args... args) {
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////////
 //
 // Function:    TreeListAddNode
@@ -1563,7 +1571,7 @@ TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, TreeListNodeData
 
 	if (!RowOfColumns || ColumnsCount == 0)// No data to add
 		return nullptr;
-
+	
 	ColumnsLocked = true; // Lock columns
 
 	pNewNode = TreeList_Internal_AddNode(pParentNode);
@@ -1574,14 +1582,14 @@ TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, TreeListNodeData
 		}
 
 		// Update UI Properties
-		if (pNewNode->pNodeData[0]->bImageList) {
+		if (pNewNode->pNodeData[0]->type == IMAGELIST) {
 			TreeItem.mask = TVIF_IMAGE | TVIF_PARAM;
-			TreeItem.iImage = I_IMAGECALLBACK;
-		} else if (pNewNode->pNodeData[0]->bText) {
+			TreeItem.iImage = RowOfColumns->pimagelist->GetCurrentImage();
+		} else if (pNewNode->pNodeData[0]->type == TEXT) {
 			TreeItem.mask = TVIF_TEXT | TVIF_PARAM;
 			TreeItem.pszText = const_cast<LPTSTR>((pNewNode->pNodeData[0]->text.c_str()));
 			TreeItem.cchTextMax = static_cast<int>(pNewNode->pNodeData[0]->text.size());
-		} else if (pNewNode->pNodeData[0]->bWnd) {
+		} else if (pNewNode->pNodeData[0]->type == HWINDOW) {
 			TreeItem.mask = TVIF_TEXT | TVIF_PARAM;
 			TreeItem.pszText = 0;
 			TreeItem.cchTextMax = 0;

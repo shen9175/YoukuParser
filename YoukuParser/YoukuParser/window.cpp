@@ -287,6 +287,9 @@ CTreeView::CTreeView(const tstring& caption, const DWORD& dwWndStyle, const int&
 
 CHeader::CHeader(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi) : CControl(caption, dwWndStyle, x, y, width, height, parent, hmenu, hi) {
 	SetAppName(WC_HEADER);
+	INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
+	icex.dwICC = ICC_LISTVIEW_CLASSES;	//Load list-view and header control classes.
+	InitCommonControlsEx(&icex);
 	DWORD errorcode;
 	hwnd = CreateWindow(szAppName.c_str(), szCaption.c_str(), dwWndStyle, xPos, yPos, width, height, hWndParent, hMenu, hInstance, 0);
 	errorcode = GetLastError();
@@ -391,4 +394,60 @@ bool CDialogBox::DialogProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) 
 		}
 	}
 	return false;
+}
+
+CImageList::CImageList(const int& cx, const int& cy, const UINT& flags, const int&  cInitial, const int&  cGrow) : current(0) {
+	if (!(handle = ImageList_Create(cx, cy, flags, cInitial, cGrow))) {
+		tstring message = TEXT("ImageList creation Failed!");
+		MessageBox(0, message.c_str(), 0, 0);
+	}
+}
+int CImageList::Add(HBITMAP  hbmImage,  HBITMAP    hbmMask) {
+	return ImageList_Add(handle, hbmImage, hbmMask);
+}
+int CImageList::AddFromFile(const tstring&  hbmImage, const tstring& hbmMask = tstring()) {
+	int ret;
+	HBITMAP image = LoadBitmap(nullptr, hbmImage.c_str());
+	if (!hbmMask.empty()) {
+		HBITMAP mask = LoadBitmap(nullptr, hbmMask.c_str());
+		ret = ImageList_Add(handle, image, mask);
+		DeleteObject(mask);
+	} else {
+		ret = ImageList_Add(handle, image, nullptr);
+	}
+	DeleteObject(image);
+	return ret;
+}
+CImageList::~CImageList() {
+	if (!ImageList_Destroy(handle)) {
+		tstring message = TEXT("ImageList Destroy Failed!");
+		MessageBox(0, message.c_str(), 0, 0);
+	}
+}
+
+CProgressBar::CProgressBar(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi) : CControl(caption, dwWndStyle, x, y, width, height, parent, hmenu, hi) {
+	SetAppName(PROGRESS_CLASS);
+	INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
+	icex.dwICC = ICC_PROGRESS_CLASS;
+	InitCommonControlsEx(&icex);
+
+	DWORD errorcode;
+	hwnd = CreateWindow(szAppName.c_str(), szCaption.c_str(), dwWndStyle, xPos, yPos, width, height, hWndParent, hMenu, hInstance, 0);
+	errorcode = GetLastError();
+	if (hwnd == nullptr) {
+		MessageBox(0, TEXT("Create Progress Bar Control Failed"), 0, 0);
+	}
+}
+
+DWORD CProgressBar::SetRange(unsigned __int64 low, __int64 high) {
+	return SendMessage(hwnd, PBM_SETRANGE32, low, high);
+}
+unsigned __int64 CProgressBar::SetStep(unsigned __int64 step) {
+	return SendMessage(hwnd, PBM_SETSTEP, step, 0);
+}
+unsigned __int64 CProgressBar::StepIt() {
+	return SendMessage(hwnd, PBM_STEPIT, 0, 0);
+}
+unsigned __int64 CProgressBar::SetPos(unsigned __int64 pos) {
+	return SendMessage(hwnd, PBM_SETPOS, pos, 0);
 }

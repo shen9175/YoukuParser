@@ -172,6 +172,28 @@ private:
 	bool DialogProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 };
 
-class CImageList : public CControl {
+class CImageList {
+public:
+	CImageList(const int& cx,const int& cy, const UINT& flags, const int&  cInitial, const int&  cGrow);
+	~CImageList();
+	int Add(_In_ HBITMAP  hbmImage, _In_opt_ HBITMAP    hbmMask);
+	int AddFromFile(const tstring&  hbmImage, const tstring& hbmMask = tstring());
+	void SetCurrentImage(int n) { current = n; }
+	int GetCurrentImage() { return current; }
+	HIMAGELIST GetHandle() { return handle; }
+private:
+	HIMAGELIST handle;
+	int current;
+};
 
+class CProgressBar : CControl {
+public:
+	CProgressBar(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi);
+	DWORD SetRange(unsigned __int64 low, __int64 high);
+	unsigned __int64 SetStep(unsigned __int64 step);
+	unsigned __int64 SetPos(unsigned __int64 pos);
+	unsigned __int64 StepIt();
+private:
+	//__int64 high;
+	//__int64 low;
 };
