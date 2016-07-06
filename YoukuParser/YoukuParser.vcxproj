@@ -184,6 +184,11 @@
   <ItemGroup>
     <ResourceCompile Include="YoukuParser\YoukuParser.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="YoukuParser\check.bmp" />
+    <Image Include="YoukuParser\cross.bmp" />
+    <Image Include="YoukuParser\play.bmp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

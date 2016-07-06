@@ -91,6 +91,10 @@ YoukuWindow::~YoukuWindow() {
 		delete pconsole;
 		pconsole = nullptr;
 	}
+	if (pTreeListView) {
+		delete pTreeListView;
+		pTreeListView = nullptr;
+	}
 	GlobalFree(hEditDS);
 }
 void YoukuWindow::OnInitWnd() {
@@ -118,6 +122,14 @@ void YoukuWindow::OnCreate(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	presult = new CStaticCtrl(TEXT(""), WS_CHILD | WS_VISIBLE | SS_LEFT, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_RESULT), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
 	pchecklist = new CheckList(TEXT("Result"), WS_CHILD | WS_BORDER | LVS_REPORT , 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_LISTCHECKBOX), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
 	pconsole = new ConsoleStream(GetDlgItem(hwnd, ID_CONSOLE));
+	RECT treelistview = { 0,0,0,0 };
+	pTreeListView = new CTreeListView(reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance, hwnd, &treelistview, 0, nullptr);
+	pTreeListView->AddColumn(TEXT("Status"), 50);
+	pTreeListView->AddColumn(TEXT("Name"), 250);
+	pTreeListView->AddColumn(TEXT("Progress"), 150);
+	pTreeListView->AddColumn(TEXT("Percentage"), 50);
+	pTreeListView->AddColumn(TEXT("Speed"), 100);
+	pTreeListView->Hide();
 	out = pconsole;
 	this->SetFont(16, 0, 0, 0, 500, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_CHARACTER_PRECIS, PROOF_QUALITY, FF_DONTCARE, TEXT("Arial"));
 	pEdit->SetFont(16, 0, 0, 0, 500, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_CHARACTER_PRECIS, PROOF_QUALITY, FF_DONTCARE, TEXT("Arial"));
@@ -151,7 +163,7 @@ void YoukuWindow::OnSize(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	pPathTitle->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2 + 28 * cxChar, cyClient / 16 + 4 * cyChar + 2 * cyClient / 3 + 2 * cyChar, 14 * cxChar, static_cast<int>(1.5 * cyChar), true);
 	pPath->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2 + 42 * cxChar, cyClient / 16 + 4 * cyChar + 2 * cyClient / 3 + 2 * cyChar, 7 * cxClient / 8 - 7 * cxChar - ((cxClient / 4 - 12 * cxChar) / 2 + 42 * cxChar), static_cast<int>(1.5 * cyChar), true);
 	pOK->CMoveWindow(7 * cxClient / 8 - 3 * cxChar, cyClient / 16 + 4 * cyChar + 2 * cyClient / 3 + 2 * cyChar, 10 * cxChar, static_cast<int>(1.5 * cyChar), true);
-	
+	pTreeListView->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 16 + 4 * cyChar, 3 * cxClient / 4 + 13 * cxChar, 2 * cyClient / 3);
 	//pchecklist->ChangeColumnSize(0, 3 * cxClient / 8);
 	//pchecklist->ChangeColumnSize(1, 3 * cxClient / 8);
 	pchecklist->AutoAdjustColumnSize(0);

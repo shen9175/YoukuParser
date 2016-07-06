@@ -285,10 +285,11 @@ void CTreeListView::TreeList_Internal_NodeFreeAllSubNodes(TreeListNode *pNode) {
 	}
 	// Free the Nodes array
 	for (Node = 0;Node < pNode->NodeDataCount;Node++) {
-		delete pNode->pNodeData[Node];
-		pNode->pNodeData[Node] = nullptr;
-		AllocatedTreeBytes -= sizeof(TreeListNodeData);
-
+		if (pNode->pNodeData[Node]) {
+			delete pNode->pNodeData[Node];
+			pNode->pNodeData[Node] = nullptr;
+			AllocatedTreeBytes -= sizeof(TreeListNodeData);
+		}
 	}
 
 	delete pNode;
@@ -1379,7 +1380,6 @@ CTreeListView::CTreeListView(HINSTANCE Instance, HWND Hwnd, RECT *pRect, DWORD d
 		if (PrevInstance == false) {
 			ProcParent = reinterpret_cast<WNDPROC>(SetWindowLongPtr(HwndParent, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(Static_TreeList_Internal_HandleTreeMessages))); // Sub classing the control
 			SetProp(HwndParent, TEXT("WNDPROC"), ProcParent);
-			SetWindowLongPtr(HwndParent, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 		}
 
 		HwndHeader = CreateWindowEx(0, WC_HEADER, 0, WS_CHILD | WS_VISIBLE | HDS_FULLDRAG, 0, 0, 0, 0, HwndParent, 0, InstanceParent, 0);
@@ -1437,8 +1437,6 @@ CTreeListView::CTreeListView(HINSTANCE Instance, HWND Hwnd, RECT *pRect, DWORD d
 
 
 CTreeListView::~CTreeListView() {
-	int AllocatedBytes;
-
 	// Kill windows objects
 	if (FontHandleTreeList)
 		DeleteObject(FontHandleTreeList);
@@ -1467,21 +1465,23 @@ CTreeListView::~CTreeListView() {
 
 	for (auto& item : ColumnsInfo) {
 		if (item) {
-			delete item;
-			item = nullptr;
+			if (item) {
+				delete item;
+				item = nullptr;
+				AllocatedTreeBytes -= sizeof(TreeListColumnInfo);
+			}
+
 		}
 	}
 
 	// Free all the nodes
 	TreeList_Internal_NodeFreeAllSubNodes(pRootNode);
-	AllocatedBytes = AllocatedTreeBytes;
 	InvalidateRect(HwndParent, &RectParent, true);
 
 
-	assert(!AllocatedBytes);
+	assert(!AllocatedTreeBytes);
 
 }
-
 
 
 
@@ -1544,13 +1544,7 @@ TreeListError CTreeListView::AddColumn(const tstring& szColumnName, int Width) {
 	return e_ERROR_COULD_NOT_ADD_COLUMN;
 }
 
-template<NodeDataType, typename T> void CTreeListView::AddRowHelper(NodeDataType type, T data) {
 
-}
-
-template<NodeDataType, typename T, typename ...Args> void  CTreeListView::TreeListAddRow(TreeListNode* ParentNode, bool Editable, long Color, void *pAnyPtr, NodeDataType columnType, T columnData, Args... args) {
-
-}
 
 ////////////////////////////////////////////////////////////////////////////////////
 //
@@ -1563,28 +1557,27 @@ template<NodeDataType, typename T, typename ...Args> void  CTreeListView::TreeLi
 // Return:      NODE_HANDLE         a valid node handle , NULL on error
 //
 ////////////////////////////////////////////////////////////////////////////////////
-TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, TreeListNodeData *RowOfColumns, int ColumnsCount) {
+TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, const vector<TreeListNodeData*>& RowOfColumns) {
 
 	TreeListNode*		pNewNode = nullptr;
 	TVITEM              TreeItem;
-	int                 Node;
 
-	if (!RowOfColumns || ColumnsCount == 0)// No data to add
+	if (RowOfColumns.empty())// No data to add
 		return nullptr;
 	
 	ColumnsLocked = true; // Lock columns
 
 	pNewNode = TreeList_Internal_AddNode(pParentNode);
 	if (pNewNode) {
-		for (Node = 0;Node <= ColumnsCount;Node++) {
-			if (!TreeList_Internal_NodeColonize(pNewNode, RowOfColumns + Node))
+		for (int i = 0; i < static_cast<int>(RowOfColumns.size()); ++i) {
+			if (!TreeList_Internal_NodeColonize(pNewNode, RowOfColumns[i]))
 				return nullptr; // Could not add the columns data
 		}
 
 		// Update UI Properties
 		if (pNewNode->pNodeData[0]->type == IMAGELIST) {
 			TreeItem.mask = TVIF_IMAGE | TVIF_PARAM;
-			TreeItem.iImage = RowOfColumns->pimagelist->GetCurrentImage();
+			TreeItem.iImage = pNewNode->pNodeData[0]->pimagelist->GetCurrentImage();
 		} else if (pNewNode->pNodeData[0]->type == TEXT) {
 			TreeItem.mask = TVIF_TEXT | TVIF_PARAM;
 			TreeItem.pszText = const_cast<LPTSTR>((pNewNode->pNodeData[0]->text.c_str()));

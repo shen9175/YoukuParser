@@ -89,6 +89,7 @@ private:
 	CStaticCtrl* pPathTitle;
 	CheckList* pchecklist;
 	ConsoleStream* pconsole;
+	CTreeListView* pTreeListView;
 	HGLOBAL hEditDS;
 	mutex mtx;
 	WNDPROC oldeditproc;

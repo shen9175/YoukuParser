@@ -177,7 +177,7 @@ public:
 	CImageList(const int& cx,const int& cy, const UINT& flags, const int&  cInitial, const int&  cGrow);
 	~CImageList();
 	int Add(_In_ HBITMAP  hbmImage, _In_opt_ HBITMAP    hbmMask);
-	int AddFromFile(const tstring&  hbmImage, const tstring& hbmMask = tstring());
+	int AddFromFile(const tstring&  hbmImage, const tstring& hbmMask);
 	void SetCurrentImage(int n) { current = n; }
 	int GetCurrentImage() { return current; }
 	HIMAGELIST GetHandle() { return handle; }

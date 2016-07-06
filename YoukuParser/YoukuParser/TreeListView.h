@@ -147,11 +147,14 @@ public:
 	~CTreeListView();
 	CTreeListView(HINSTANCE Instance, HWND Hwnd, RECT *pRect, DWORD dwFlags, TREELIST_CB *pFunc);
 	TreeListError AddColumn(const tstring& ColumnName, int Width);
-	TreeListNode* AddNode(TreeListNode* ParentHandle, TreeListNodeData *RowOfColumns, int ColumnsCount);
-
+	TreeListNode* AddNode(TreeListNode* pParentNode, const vector<TreeListNodeData*>& RowOfColumns);
+	void Show() { ShowWindow(HwndTreeView, SW_SHOW);  ShowWindow(HwndHeader, SW_SHOW);}
+	void Hide() { ShowWindow(HwndTreeView, SW_HIDE); ShowWindow(HwndHeader, SW_HIDE);}
+	void CMoveWindow(int x, int y, int width, int height) { RectRequested.left = x, RectRequested.right = x + width; RectRequested.top = y; RectRequested.bottom = y + height;TreeList_Internal_RepositionControls(); }
 	static LRESULT CALLBACK Static_TreeList_Internal_HandleEditBoxMessages(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK Static_TreeList_Internal_HandleTreeMessagesEx(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK Static_TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+
 private:
 	TreeListNode* TreeList_Internal_AddNode(TreeListNode *pParent);
 	TreeListNode* TreeList_Internal_NodeCreateNew();
@@ -228,5 +231,7 @@ private:
 	TREELIST_CB                 *pCBValidateEdit;
 	const unsigned long TreeListCRC32Table[256];
 };
+
+
 
 

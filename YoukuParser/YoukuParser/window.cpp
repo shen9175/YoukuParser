@@ -405,7 +405,7 @@ CImageList::CImageList(const int& cx, const int& cy, const UINT& flags, const in
 int CImageList::Add(HBITMAP  hbmImage,  HBITMAP    hbmMask) {
 	return ImageList_Add(handle, hbmImage, hbmMask);
 }
-int CImageList::AddFromFile(const tstring&  hbmImage, const tstring& hbmMask = tstring()) {
+int CImageList::AddFromFile(const tstring&  hbmImage, const tstring& hbmMask = TEXT("")) {
 	int ret;
 	HBITMAP image = LoadBitmap(nullptr, hbmImage.c_str());
 	if (!hbmMask.empty()) {
@@ -440,7 +440,7 @@ CProgressBar::CProgressBar(const tstring& caption, const DWORD& dwWndStyle, cons
 }
 
 DWORD CProgressBar::SetRange(unsigned __int64 low, __int64 high) {
-	return SendMessage(hwnd, PBM_SETRANGE32, low, high);
+	return static_cast<DWORD>(SendMessage(hwnd, PBM_SETRANGE32, low, high));
 }
 unsigned __int64 CProgressBar::SetStep(unsigned __int64 step) {
 	return SendMessage(hwnd, PBM_SETSTEP, step, 0);
