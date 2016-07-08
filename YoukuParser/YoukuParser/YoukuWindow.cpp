@@ -778,3 +778,18 @@ bool CheckList::Update(const int& i) {
 	}
 }
 
+
+DownloadInfo::DownloadInfo() {
+	
+}
+
+DownloadInfo::~DownloadInfo() {
+	for (auto& elem : download_info) {
+		for (auto& item : elem) {
+			if (item->text) {
+				delete item->text;
+				item->text = nullptr;
+			}
+		}
+	}
+}

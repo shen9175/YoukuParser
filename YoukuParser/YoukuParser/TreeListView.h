@@ -57,7 +57,7 @@ typedef enum {
 ///////////////////////////////////////////////////////////////////////////////////////
 enum NodeDataType { IMAGELIST, HWINDOW, TEXT } ;
 struct TreeListNodeData {
-	tstring                     text;
+	tstring*                    text;
 	CImageList*					pimagelist;
 	CWnd*						pWindow;
 	NodeDataType				type;
@@ -147,7 +147,7 @@ public:
 	~CTreeListView();
 	CTreeListView(HINSTANCE Instance, HWND Hwnd, RECT *pRect, DWORD dwFlags, TREELIST_CB *pFunc);
 	TreeListError AddColumn(const tstring& ColumnName, int Width);
-	TreeListNode* AddNode(TreeListNode* pParentNode, const vector<TreeListNodeData*>& RowOfColumns);
+	TreeListNode* AddNode(TreeListNode* pParentNode, const vector<TreeListNodeData*>& RowOfColumns, const tstring& rootname = TEXT(""));
 	void Show() { ShowWindow(HwndTreeView, SW_SHOW);  ShowWindow(HwndHeader, SW_SHOW);}
 	void Hide() { ShowWindow(HwndTreeView, SW_HIDE); ShowWindow(HwndHeader, SW_HIDE);}
 	void CMoveWindow(int x, int y, int width, int height) { RectRequested.left = x, RectRequested.right = x + width; RectRequested.top = y; RectRequested.bottom = y + height;TreeList_Internal_RepositionControls(); }
@@ -156,7 +156,7 @@ public:
 	static LRESULT CALLBACK Static_TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 
 private:
-	TreeListNode* TreeList_Internal_AddNode(TreeListNode *pParent);
+	TreeListNode* TreeList_Internal_AddNode(TreeListNode *pParent, const tstring& rootname = TEXT(""));
 	TreeListNode* TreeList_Internal_NodeCreateNew();
 	TreeListNode* TreeList_Internal_NodeGetLastBrother(TreeListNode *pNode);
 	TreeListNode* TreeList_Internal_NodeColonize(TreeListNode *pNode, TreeListNodeData *pNodeData);
@@ -227,7 +227,7 @@ private:
 	tstring                     EditBoxBuffer;
 	tstring                     EditBoxOverrideBuffer;
 	vector<TreeListColumnInfo*> ColumnsInfo;
-	TreeListNode                *pRootNode;
+	unordered_map<tstring, TreeListNode*>	AllRootNodes;
 	TREELIST_CB                 *pCBValidateEdit;
 	const unsigned long TreeListCRC32Table[256];
 };

@@ -90,11 +90,17 @@ private:
 	CheckList* pchecklist;
 	ConsoleStream* pconsole;
 	CTreeListView* pTreeListView;
+	vector<vector<TreeListNodeData*>> download_info;
 	HGLOBAL hEditDS;
 	mutex mtx;
 	WNDPROC oldeditproc;
 };
-
+class DownloadInfo {
+	DownloadInfo();
+	~DownloadInfo();
+private:
+	vector<vector<TreeListNodeData*>> download_info;
+};
 
 class InputPWD : public CDialogBox {
 public:

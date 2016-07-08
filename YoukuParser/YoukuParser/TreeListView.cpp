@@ -193,7 +193,7 @@ TreeListNode* CTreeListView::TreeList_Internal_NodeColonize(TreeListNode *pNode,
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent) {
+TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent, const tstring& rootname = TEXT("")) {
 
 	TreeListNode *pNewNode = nullptr;
 	TreeListNode *pLastBrother = nullptr;
@@ -201,16 +201,29 @@ TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent) {
 
 	
 				  // Special Case: Create the root node
-	if (!pParent && !pRootNode) {
-		pRootNode = TreeList_Internal_NodeCreateNew();
+	if (!pParent) {
+		TreeListNode * pRootNode = TreeList_Internal_NodeCreateNew();
+		if (!rootname.empty() && pRootNode != nullptr && AllRootNodes.find(rootname) == AllRootNodes.cend()) {
+			AllRootNodes[rootname] = pRootNode;
+		} else {
+			if (rootname.empty()) {
+				MessageBox(HwndParent, TEXT("Root Node does not have a signed name key for hashmap"), TEXT("Error"), MB_OK);
+			} else if (!pRootNode) {
+				MessageBox(HwndParent, TEXT("Create Root Node failed"), TEXT("Error"), MB_OK);
+			} else {
+				tstring temp = TEXT("Root Node hashmap has already haven this key: ") + rootname;
+				MessageBox(HwndParent, temp.c_str(), TEXT("Error"), MB_OK);
+			}
+			return nullptr;
+		}
 		return pRootNode;
 	}
 
 	// Special Case: Error, no root, no parent
-	if (!pParent && !pRootNode)
-		return nullptr;
+	//if (!pParent && !pRootNode)
+	//	return nullptr;
 
-
+/* now using the hashmap to store all the root node instead of linked list
 	// Special Case: a root node brother
 	if (!pParent) {
 		pNewNode = TreeList_Internal_NodeCreateNew();
@@ -226,7 +239,7 @@ TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent) {
 
 		return pNewNode;
 	}
-
+*/
 	// Normal cases where there is a root node and we got the parent
 
 	// Validate the parent integrity (NodeData crc)
@@ -334,11 +347,11 @@ void CTreeListView::TreeList_Internal_AutoSetLastColumn() {
 	int     Width, NewWidth;
 	int     StartPosition;
 
-	if (ColumnsLocked == FALSE)
+	if (ColumnsLocked == false)
 		return; // No session or that the headers are being updated
 
 
-	ColumnDoAutoAdjust = FALSE;
+	ColumnDoAutoAdjust = false;
 
 	GetClientRect(HwndHeader, &RectHeader);
 
@@ -381,7 +394,7 @@ void CTreeListView::TreeList_Internal_UpdateColumns() {
 	HDITEM  HeaderItem;
 	RECT    RectHeaderItem, RectText;
 
-	if (ColumnsLocked == FALSE)
+	if (ColumnsLocked == false)
 		return; // No session or that the headers are being updated
 
 	memset(&HeaderItem, 0, sizeof(HeaderItem));
@@ -866,7 +879,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 
 			HwndEditBox = CreateWindowEx(0,
 				TEXT("EDIT"),
-				pNode->pNodeData[EditedColumn]->text.c_str(),
+				pNode->pNodeData[EditedColumn]->text->c_str(),
 				dwStyle,
 				SizeEdit.X + SizeRequested.X,                                                       // Position: left
 				SizeEdit.Y + ((RectHeaderItem.bottom - RectHeaderItem.top)) + SizeRequested.Y,    // Position: top
@@ -881,7 +894,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 				ProcEdit = reinterpret_cast<WNDPROC>(SetWindowLongPtr(HwndEditBox, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(Static_TreeList_Internal_HandleEditBoxMessages))); // Subclassing the control (it will help trapping the enter key press event on a dialog)
 				SendMessage(HwndEditBox, WM_SETFONT, reinterpret_cast<WPARAM>(FontHandleEdit), static_cast<LPARAM>(true));
 				SetFocus(HwndEditBox);
-				SendMessage(HwndEditBox, EM_SETSEL, pNode->pNodeData[EditedColumn]->text.size(), pNode->pNodeData[EditedColumn]->text.size()); // Select all text
+				SendMessage(HwndEditBox, EM_SETSEL, pNode->pNodeData[EditedColumn]->text->size(), pNode->pNodeData[EditedColumn]->text->size()); // Select all text
 
 			} else {
 				EditedColumn = 0;
@@ -912,7 +925,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 		EditBoxBuffer.resize(TREELIST_MAX_STRING + 1);
 		if (GetWindowText(HwndEditBox, &EditBoxBuffer[0], TREELIST_MAX_STRING) > 0)// Get edit box text
 		{
-			if (EditBoxBuffer != pNode->pNodeData[EditedColumn]->text) {
+			if (EditBoxBuffer != *pNode->pNodeData[EditedColumn]->text) {
 				// Call the user!
 				if (pCBValidateEdit) {
 					WaitingForCaller = true;
@@ -920,9 +933,9 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 
 					if (pCBValidateEdit(pNode->pNodeData[EditedColumn]->pExternalPtr, const_cast<const tstring&>(EditBoxBuffer), EditBoxOverrideBuffer) == true) {
 						if (!EditBoxOverrideBuffer.empty()) {
-							pNode->pNodeData[EditedColumn]->text = EditBoxOverrideBuffer;
+							*pNode->pNodeData[EditedColumn]->text = EditBoxOverrideBuffer;
 						} else {
-							pNode->pNodeData[EditedColumn]->text = EditBoxBuffer;
+							*pNode->pNodeData[EditedColumn]->text = EditBoxBuffer;
 						}
 						pNode->pNodeData[EditedColumn]->Altered = true; // Set "changed" flag so we will be able to color it later
 																				  // Update CRC
@@ -1038,7 +1051,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 
 				// Draw Label, calculate the rect first
 				if (pNode->pNodeData[0]->type == TEXT) {
-					DrawText(hDC, pNode->pNodeData[0]->text.c_str(), static_cast<int>(pNode->pNodeData[0]->text.size()), &RectText, DT_NOPREFIX | DT_CALCRECT);
+					DrawText(hDC, pNode->pNodeData[0]->text->c_str(), static_cast<int>(pNode->pNodeData[0]->text->size()), &RectText, DT_NOPREFIX | DT_CALCRECT);
 				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
 
 				} else if (pNode->pNodeData[0]->type == HWINDOW) {
@@ -1074,7 +1087,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 				TreeList_Internal_DeflateRectEx(&RectText, 2, 1); // Defalate it
 
 				if (pNode->pNodeData[0]->type == TEXT) {
-					DrawText(hDC, pNode->pNodeData[0]->text.c_str(), static_cast<int>(pNode->pNodeData[0]->text.size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
+					DrawText(hDC, pNode->pNodeData[0]->text->c_str(), static_cast<int>(pNode->pNodeData[0]->text->size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
 				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
 
 				} else if (pNode->pNodeData[0]->type == HWINDOW) {
@@ -1122,7 +1135,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 							}
 
 							if (pNode->pNodeData[iCol]->type == TEXT) {
-								DrawText(hDC, pNode->pNodeData[iCol]->text.c_str(), static_cast<int>(pNode->pNodeData[iCol]->text.size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
+								DrawText(hDC, pNode->pNodeData[iCol]->text->c_str(), static_cast<int>(pNode->pNodeData[iCol]->text->size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
 							} else if (pNode->pNodeData[iCol]->type == IMAGELIST) {
 
 							} else if (pNode->pNodeData[iCol]->type == HWINDOW) {
@@ -1475,7 +1488,10 @@ CTreeListView::~CTreeListView() {
 	}
 
 	// Free all the nodes
-	TreeList_Internal_NodeFreeAllSubNodes(pRootNode);
+	for (auto& pRootNode : AllRootNodes) {
+		TreeList_Internal_NodeFreeAllSubNodes(pRootNode.second);
+	}
+
 	InvalidateRect(HwndParent, &RectParent, true);
 
 
@@ -1557,7 +1573,7 @@ TreeListError CTreeListView::AddColumn(const tstring& szColumnName, int Width) {
 // Return:      NODE_HANDLE         a valid node handle , NULL on error
 //
 ////////////////////////////////////////////////////////////////////////////////////
-TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, const vector<TreeListNodeData*>& RowOfColumns) {
+TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, const vector<TreeListNodeData*>& RowOfColumns, const tstring& rootname = TEXT("")) {
 
 	TreeListNode*		pNewNode = nullptr;
 	TVITEM              TreeItem;
@@ -1580,8 +1596,8 @@ TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, const vector<Tre
 			TreeItem.iImage = pNewNode->pNodeData[0]->pimagelist->GetCurrentImage();
 		} else if (pNewNode->pNodeData[0]->type == TEXT) {
 			TreeItem.mask = TVIF_TEXT | TVIF_PARAM;
-			TreeItem.pszText = const_cast<LPTSTR>((pNewNode->pNodeData[0]->text.c_str()));
-			TreeItem.cchTextMax = static_cast<int>(pNewNode->pNodeData[0]->text.size());
+			TreeItem.pszText = const_cast<LPTSTR>((pNewNode->pNodeData[0]->text->c_str()));
+			TreeItem.cchTextMax = static_cast<int>(pNewNode->pNodeData[0]->text->size());
 		} else if (pNewNode->pNodeData[0]->type == HWINDOW) {
 			TreeItem.mask = TVIF_TEXT | TVIF_PARAM;
 			TreeItem.pszText = 0;
