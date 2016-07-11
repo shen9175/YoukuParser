@@ -193,7 +193,7 @@ TreeListNode* CTreeListView::TreeList_Internal_NodeColonize(TreeListNode *pNode,
 //
 ///////////////////////////////////////////////////////////////////////////////////////
 
-TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent, const tstring& rootname = TEXT("")) {
+TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent, const tstring& name) {
 
 	TreeListNode *pNewNode = nullptr;
 	TreeListNode *pLastBrother = nullptr;
@@ -203,15 +203,15 @@ TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent, co
 				  // Special Case: Create the root node
 	if (!pParent) {
 		TreeListNode * pRootNode = TreeList_Internal_NodeCreateNew();
-		if (!rootname.empty() && pRootNode != nullptr && AllRootNodes.find(rootname) == AllRootNodes.cend()) {
-			AllRootNodes[rootname] = pRootNode;
+		if (!name.empty() && pRootNode != nullptr && AllRootNodes.find(name) == AllRootNodes.cend()) {
+			AllRootNodes[name] = pRootNode;
 		} else {
-			if (rootname.empty()) {
+			if (name.empty()) {
 				MessageBox(HwndParent, TEXT("Root Node does not have a signed name key for hashmap"), TEXT("Error"), MB_OK);
 			} else if (!pRootNode) {
 				MessageBox(HwndParent, TEXT("Create Root Node failed"), TEXT("Error"), MB_OK);
 			} else {
-				tstring temp = TEXT("Root Node hashmap has already haven this key: ") + rootname;
+				tstring temp = TEXT("Root Node hashmap has already haven this key: ") + name;
 				MessageBox(HwndParent, temp.c_str(), TEXT("Error"), MB_OK);
 			}
 			return nullptr;
@@ -257,12 +257,26 @@ TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent, co
 		if (pParent->pSibling) // Our parent has a sibling?
 		{
 			pLastBrother = TreeList_Internal_NodeGetLastBrother(pParent->pSibling); // Are there any brothers to this sibling?
-			if (pLastBrother)
+			if (pLastBrother) {
 				pLastBrother->pBrother = pNewNode; // There are brotheres, be the last of them
-			else
+			} else {
 				pParent->pSibling->pBrother = pNewNode; // There are no brother's, be the first
-		} else
+			}
+		} else {
 			pParent->pSibling = pNewNode; // Be the first sibling of our parent
+		}
+		if (!name.empty() && pParent->AllSiblings.find(name) == pParent->AllSiblings.cend()) {
+			pParent->AllSiblings[name] = pNewNode;
+		} else {
+			if (name.empty()) {
+				MessageBox(HwndParent, TEXT("The Node does not have a signed name key for hashmap"), TEXT("Error"), MB_OK);
+			} else {
+				tstring temp = TEXT("The Node hashmap has already haven this key: ") + name;
+				MessageBox(HwndParent, temp.c_str(), TEXT("Error"), MB_OK);
+			}
+		}
+	} else {
+		MessageBox(HwndParent, TEXT("Create Node failed"), TEXT("Error"), MB_OK);
 	}
 
 	return pNewNode;
@@ -276,7 +290,33 @@ TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent, co
 //
 //
 ///////////////////////////////////////////////////////////////////////////////////////
+/*
+void CTreeListView::TreeList_GetAllSubWnd(TreeListNode* pNode, vector<CWnd*> AllSubWnd) {
+	TreeListNode *pTmpNode = nullptr;
 
+	if (!pNode)
+		return; // No session
+
+	if (pNode->pSibling) {
+		pTmpNode = pNode->pSibling;
+		TreeList_GetAllSubWnd(pTmpNode, AllSubWnd);
+	}
+
+	if (pNode->pBrother) {
+		pTmpNode = pNode->pBrother;
+		TreeList_GetAllSubWnd(pTmpNode, AllSubWnd);
+
+	}
+
+	for (int Node = 0; Node < pNode->NodeDataCount; ++Node) {
+		if (pNode->pNodeData[Node]) {
+			if (pNode->pNodeData[Node]->pWindow) {
+				AllSubWnd.push_back(pNode->pNodeData[Node]->pWindow);
+			}
+		}
+	}
+
+}*/
 void CTreeListView::TreeList_Internal_NodeFreeAllSubNodes(TreeListNode *pNode) {
 
 
@@ -299,6 +339,15 @@ void CTreeListView::TreeList_Internal_NodeFreeAllSubNodes(TreeListNode *pNode) {
 	// Free the Nodes array
 	for (Node = 0;Node < pNode->NodeDataCount;Node++) {
 		if (pNode->pNodeData[Node]) {
+			if (pNode->pNodeData[Node]->text) {
+				delete pNode->pNodeData[Node]->text;
+			}
+			if (pNode->pNodeData[Node]->pWindow) {
+				delete pNode->pNodeData[Node]->pWindow;
+			}
+			if (pNode->pNodeData[Node]->pimagelist) {
+				delete pNode->pNodeData[Node]->pimagelist;
+			}
 			delete pNode->pNodeData[Node];
 			pNode->pNodeData[Node] = nullptr;
 			AllocatedTreeBytes -= sizeof(TreeListNodeData);
@@ -532,7 +581,14 @@ void CTreeListView::TreeList_Internal_RepositionControls() {
 	TreeList_Internal_UpdateColumns();          // Update the columns sizes
 	TreeList_Internal_AutoSetLastColumn();      // Set the last col to be max size
 
-
+	/*
+	for (auto item : AllRootNodes) {
+		vector<CWnd*> allsubwnd;
+		TreeList_GetAllSubWnd(item.second, allsubwnd);
+		for (auto wnd : allsubwnd) {
+			wnd->CMoveWindow(TREELIST_PRNTCTLSIZE(SizeHeader), true);
+		}
+	}*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -719,7 +775,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 	LPNMHEADER          lpNMHeaderChange = 0;
 	TVHITTESTINFO       TreeTestInfo = { 0 };
 	TVITEM              Treeitem = { 0 };
-	WNDPROC             ProcParent = (WNDPROC)GetProp(hWnd, TEXT("WNDPROC"));
+	//WNDPROC             ProcParent = reinterpret_cast<WNDPROC>(GetWindowLongPtr(HwndHeader, GWLP_USERDATA));//reinterpret_cast<WNDPROC>(GetProp(hWnd, TEXT("WNDPROC")));
 	RECT                RectLabel = { 0,0,0,0 };
 	RECT                RectText = { 0,0,0,0 };
 	RECT                RectItem = { 0,0,0,0 };
@@ -1089,7 +1145,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 				if (pNode->pNodeData[0]->type == TEXT) {
 					DrawText(hDC, pNode->pNodeData[0]->text->c_str(), static_cast<int>(pNode->pNodeData[0]->text->size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
 				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
-
+					
 				} else if (pNode->pNodeData[0]->type == HWINDOW) {
 					pNode->pNodeData[0]->pWindow->CMoveWindow(RectText.left, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
 					pNode->pNodeData[0]->pWindow->Show();
@@ -1256,8 +1312,12 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 	}
 
 	if (RetVal == false) {
-		if (ProcParent)
-			return CallWindowProc(ProcParent, hWnd, Msg, wParam, lParam);
+		if (ProcParent) {
+			//SetWindowLongPtr(HwndParent, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(Parent_GWLP_USERDATA));//resume parent class this pointer and call parent window procedure
+			LRESULT ret = CallWindowProc(ProcParent, hWnd, Msg, wParam, lParam);
+			//Parent_GWLP_USERDATA = reinterpret_cast<void*>(SetWindowLongPtr(HwndParent, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)));
+			return ret;
+		}
 		else
 			return false;
 	} else
@@ -1386,16 +1446,22 @@ CTreeListView::CTreeListView(HINSTANCE Instance, HWND Hwnd, RECT *pRect, DWORD d
 
 
 		//TreeList_Internal_DictUpdate(false, this, HwndParent, HwndTreeView);
+		
 		SendMessage(HwndTreeView, WM_SETFONT, reinterpret_cast<WPARAM>(FontHandleTreeList), static_cast<LPARAM>(true));
 		ProcTreeList = reinterpret_cast<WNDPROC>(SetWindowLongPtr(HwndTreeView, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(Static_TreeList_Internal_HandleTreeMessagesEx))); // Sub classing the control
+		Parent_GWLP_USERDATA = reinterpret_cast<void*>(SetWindowLongPtr(HwndParent, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this)));//replace parent user_data, since parent also save this pointer in user data
+		//if you don't replace parent window user data, then when windows call parent window procedure, GetWindowLongPtr(hwnd, GWLP_USERDATA) will be parent's pre-saved this pointer not TreeListView this pointer, it will screw all memory space if you cast parent this to Treelistview this pointer
 		SetWindowLongPtr(HwndTreeView, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-																																				// Sub class the parent window
+		
+	
+
 		if (PrevInstance == false) {
 			ProcParent = reinterpret_cast<WNDPROC>(SetWindowLongPtr(HwndParent, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(Static_TreeList_Internal_HandleTreeMessages))); // Sub classing the control
-			SetProp(HwndParent, TEXT("WNDPROC"), ProcParent);
+			//SetProp(HwndParent, TEXT("WNDPROC"), ProcParent);
+			//SetWindowLongPtr(HwndHeader, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(ProcParent));
 		}
-
 		HwndHeader = CreateWindowEx(0, WC_HEADER, 0, WS_CHILD | WS_VISIBLE | HDS_FULLDRAG, 0, 0, 0, 0, HwndParent, 0, InstanceParent, 0);
+		
 
 		if (!HwndTreeView) {
 			Error = true;
@@ -1472,7 +1538,8 @@ CTreeListView::~CTreeListView() {
 	if (HwndTreeView) {
 		//TreeList_Internal_DictUpdate(true, this, nullptr, HwndTreeView);
 		SetWindowLongPtr(HwndParent, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(ProcParent)); // Restore the original wnd proc to the parent
-		RemoveProp(HwndParent, TEXT("WNDPROC"));
+		SetWindowLongPtr(HwndParent, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(Parent_GWLP_USERDATA));//resume parent class this pointer
+		//RemoveProp(HwndParent, TEXT("WNDPROC"));
 		DestroyWindow(HwndTreeView);
 	}
 
@@ -1573,8 +1640,8 @@ TreeListError CTreeListView::AddColumn(const tstring& szColumnName, int Width) {
 // Return:      NODE_HANDLE         a valid node handle , NULL on error
 //
 ////////////////////////////////////////////////////////////////////////////////////
-TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, const vector<TreeListNodeData*>& RowOfColumns, const tstring& rootname = TEXT("")) {
-
+TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, const vector<void*>& RowOfColumns, const tstring& name) {
+	
 	TreeListNode*		pNewNode = nullptr;
 	TVITEM              TreeItem;
 
@@ -1583,10 +1650,10 @@ TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, const vector<Tre
 	
 	ColumnsLocked = true; // Lock columns
 
-	pNewNode = TreeList_Internal_AddNode(pParentNode);
+	pNewNode = TreeList_Internal_AddNode(pParentNode, name);
 	if (pNewNode) {
 		for (int i = 0; i < static_cast<int>(RowOfColumns.size()); ++i) {
-			if (!TreeList_Internal_NodeColonize(pNewNode, RowOfColumns[i]))
+			if (!TreeList_Internal_NodeColonize(pNewNode, reinterpret_cast<TreeListNodeData*>(RowOfColumns[i])))
 				return nullptr; // Could not add the columns data
 		}
 

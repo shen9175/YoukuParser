@@ -126,5 +126,11 @@
     <Image Include="YoukuParser\play.bmp">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="YoukuParser\stop.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="YoukuParser\wait.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

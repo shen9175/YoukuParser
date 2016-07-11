@@ -185,6 +185,8 @@
     <ResourceCompile Include="YoukuParser\YoukuParser.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="YoukuParser\wait.bmp" />
+    <Image Include="YoukuParser\stop.bmp" />
     <Image Include="YoukuParser\check.bmp" />
     <Image Include="YoukuParser\cross.bmp" />
     <Image Include="YoukuParser\play.bmp" />

@@ -11,7 +11,7 @@ class httpclient {
 		bool GetHtml(const tstring& url, tstring& html);
 		bool GetJson(const tstring& url, tstring& json, const tstring& referer, const tstring& cookie);
 		bool GetM3U8(const tstring& url, tstring& m3u8);
-		bool GetVideo(const tstring &url, string& video);
+		bool GetVideo(const tstring &url, string& video, tstring* speed, tstring* percentage);
 		tstring GetCookie(const tstring& url);
 		tstring GetSetCookie(const tstring& url);// { return setcookie; };
 		tstring GetHtmlSetCookie() { return setcookie; }
@@ -19,7 +19,7 @@ class httpclient {
 		void SetTreeRowInfo(TreeListNodeData* p) { row_info = p; }
 	private:
 		bool downloadTXTfile(tstring& file);
-		bool downloadBINfile(string& file);
+		bool downloadBINfile(string& file, tstring* speed, tstring* percentage);
 		HINTERNET hIntSession, hHttpSession, hHttpRequest, hURL;
 		CTreeListView* TreeListViewoutput;
 		TreeListNodeData* row_info;

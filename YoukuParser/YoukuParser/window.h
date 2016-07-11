@@ -178,6 +178,7 @@ public:
 	~CImageList();
 	int Add(_In_ HBITMAP  hbmImage, _In_opt_ HBITMAP    hbmMask);
 	int AddFromFile(const tstring&  hbmImage, const tstring& hbmMask);
+	int AddFromResourceID(DWORD  hbmImageID, DWORD hbmMask = 0);
 	void SetCurrentImage(int n) { current = n; }
 	int GetCurrentImage() { return current; }
 	HIMAGELIST GetHandle() { return handle; }
@@ -186,9 +187,10 @@ private:
 	int current;
 };
 
-class CProgressBar : CControl {
+class CProgressBar : public CControl {
 public:
 	CProgressBar(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi);
+	virtual void OnNotification(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {}
 	DWORD SetRange(unsigned __int64 low, __int64 high);
 	unsigned __int64 SetStep(unsigned __int64 step);
 	unsigned __int64 SetPos(unsigned __int64 pos);

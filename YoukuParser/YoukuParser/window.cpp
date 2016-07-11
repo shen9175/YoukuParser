@@ -1,6 +1,5 @@
 #include "stdafx.h"
 
-
 CWnd::CWnd() {
 	szAppName = TEXT("Default Application");
 	szCaption = TEXT("Default");
@@ -8,6 +7,7 @@ CWnd::CWnd() {
 	wndclass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 	wndclass.lpfnWndProc = RetriveWndProcPointer;
 	wndclass.cbClsExtra = 0;
+	//wndclass.cbWndExtra = 0;
 	wndclass.cbWndExtra = sizeof(CWnd*);//send CWnd::this pointer to LPCREATESTRUCT struct
 	wndclass.hInstance = hInstance;
 	wndclass.hIcon = LoadIcon(nullptr, IDI_APPLICATION);//LoadIcon(nullptr, MAKEINTRESOURCE(IDI_ICON1));
@@ -34,6 +34,7 @@ CWnd::CWnd(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCm
 	wndclass.lpfnWndProc = RetriveWndProcPointer;
 	wndclass.cbClsExtra = 0;
 	wndclass.cbWndExtra = sizeof(CWnd*);//send CWnd::this pointer to LPCREATESTRUCT struct
+										//wndclass.cbWndExtra = 0;
 	wndclass.hInstance = hInstance;
 	wndclass.hIcon = LoadIcon(nullptr, IDI_APPLICATION);//LoadIcon(nullptr, MAKEINTRESOURCE(IDI_ICON1));
 	wndclass.hCursor = LoadCursor(nullptr, IDC_ARROW);//LoadCursor(hInstance, MAKEINTRESOURCE(IDC_CURSOR1));
@@ -53,6 +54,7 @@ CWnd::CWnd(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR szCmdLine, int iCm
 	cyChar = HIWORD(GetDialogBaseUnits());
 }
 CWnd::~CWnd() {
+		RemoveProp(hwnd, TEXT("THIS"));
 	if (hfont) {
 		DeleteObject(hfont);
 	}
@@ -67,7 +69,7 @@ int WINAPI CWnd::Run() {
 		return 0;
 	};
 	//second parameter cannot be hwnd, must be nullptr, or it will not quit properly
-	while (GetMessage(&msg,nullptr, 0, 0)) {
+	while (GetMessage(&msg, nullptr, 0, 0)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
@@ -81,6 +83,7 @@ bool CWnd::CreateWnd() {
 		MessageBox(0, TEXT("Create Window Failed"), 0, 0);
 		return false;
 	}
+	//SetProp(hwnd, TEXT("THIS"), this);
 	ShowWindow(hwnd, iCmdShow);
 	UpdateWindow(hwnd);
 	return true;
@@ -98,9 +101,14 @@ LRESULT CALLBACK CWnd::RetriveWndProcPointer(HWND hwnd, UINT iMsg, WPARAM wParam
 	if (iMsg == WM_NCCREATE) {
 		//retrieve "this" pointer which has been passed by CreateWindow() last parameter: "this" pointer is stored in the first member of CREATESTRUCT lpCreateParams
 		SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(reinterpret_cast<LPCREATESTRUCT>(lParam)->lpCreateParams));//retrieve CWnd this pointer
+		SetProp(hwnd, TEXT("THIS"), reinterpret_cast<CWnd*>(reinterpret_cast<LPCREATESTRUCT>(lParam)->lpCreateParams));
 		return reinterpret_cast<CWnd*>(reinterpret_cast<LPCREATESTRUCT>(lParam)->lpCreateParams)->WndProc(hwnd, iMsg, wParam, lParam);
 	} else {
-		CWnd* curretnThis = reinterpret_cast<CWnd*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+		CWnd* curretnThis = reinterpret_cast<CWnd*>(GetProp(hwnd, TEXT("THIS")));
+		//if (!curretnThis) {
+		//	curretnThis = reinterpret_cast<CWnd*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+		//}
+		//CWnd* curretnThis = reinterpret_cast<CWnd*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 		if (!curretnThis) {
 			return DefWindowProc(hwnd, iMsg, wParam, lParam);
 		} else {
@@ -410,6 +418,19 @@ int CImageList::AddFromFile(const tstring&  hbmImage, const tstring& hbmMask = T
 	HBITMAP image = LoadBitmap(nullptr, hbmImage.c_str());
 	if (!hbmMask.empty()) {
 		HBITMAP mask = LoadBitmap(nullptr, hbmMask.c_str());
+		ret = ImageList_Add(handle, image, mask);
+		DeleteObject(mask);
+	} else {
+		ret = ImageList_Add(handle, image, nullptr);
+	}
+	DeleteObject(image);
+	return ret;
+}
+int CImageList::AddFromResourceID(DWORD  hbmImageID, DWORD hbmMask) {
+	int ret;
+	HBITMAP image = LoadBitmap(nullptr, MAKEINTRESOURCE(hbmImageID));
+	if (!hbmMask) {
+		HBITMAP mask = LoadBitmap(nullptr,MAKEINTRESOURCE(hbmMask));
 		ret = ImageList_Add(handle, image, mask);
 		DeleteObject(mask);
 	} else {

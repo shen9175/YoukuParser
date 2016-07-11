@@ -90,6 +90,7 @@ private:
 	CheckList* pchecklist;
 	ConsoleStream* pconsole;
 	CTreeListView* pTreeListView;
+
 	vector<vector<TreeListNodeData*>> download_info;
 	HGLOBAL hEditDS;
 	mutex mtx;

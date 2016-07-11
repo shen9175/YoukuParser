@@ -91,10 +91,12 @@ YoukuWindow::~YoukuWindow() {
 		delete pconsole;
 		pconsole = nullptr;
 	}
+	
 	if (pTreeListView) {
 		delete pTreeListView;
 		pTreeListView = nullptr;
 	}
+	
 	GlobalFree(hEditDS);
 }
 void YoukuWindow::OnInitWnd() {
@@ -122,14 +124,23 @@ void YoukuWindow::OnCreate(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	presult = new CStaticCtrl(TEXT(""), WS_CHILD | WS_VISIBLE | SS_LEFT, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_RESULT), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
 	pchecklist = new CheckList(TEXT("Result"), WS_CHILD | WS_BORDER | LVS_REPORT , 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_LISTCHECKBOX), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
 	pconsole = new ConsoleStream(GetDlgItem(hwnd, ID_CONSOLE));
+	
 	RECT treelistview = { 0,0,0,0 };
 	pTreeListView = new CTreeListView(reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance, hwnd, &treelistview, 0, nullptr);
-	pTreeListView->AddColumn(TEXT("Status"), 50);
-	pTreeListView->AddColumn(TEXT("Name"), 250);
-	pTreeListView->AddColumn(TEXT("Progress"), 150);
-	pTreeListView->AddColumn(TEXT("Percentage"), 50);
+	
+	pTreeListView->AddColumn(TEXT("Status"), 100);
+	pTreeListView->AddColumn(TEXT("Name"), 550);
+	pTreeListView->AddColumn(TEXT("Progress"), 250);
+	pTreeListView->AddColumn(TEXT("Percentage"), 100);
 	pTreeListView->AddColumn(TEXT("Speed"), 100);
 	pTreeListView->Hide();
+	pOK->Hide();
+	pPath->Hide();
+	pPathTitle->Hide();
+	pSelectAll->Hide();
+	pInvSelect->Hide();
+	pSelectFolder->Hide();
+	
 	out = pconsole;
 	this->SetFont(16, 0, 0, 0, 500, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_CHARACTER_PRECIS, PROOF_QUALITY, FF_DONTCARE, TEXT("Arial"));
 	pEdit->SetFont(16, 0, 0, 0, 500, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_CHARACTER_PRECIS, PROOF_QUALITY, FF_DONTCARE, TEXT("Arial"));
@@ -163,7 +174,7 @@ void YoukuWindow::OnSize(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	pPathTitle->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2 + 28 * cxChar, cyClient / 16 + 4 * cyChar + 2 * cyClient / 3 + 2 * cyChar, 14 * cxChar, static_cast<int>(1.5 * cyChar), true);
 	pPath->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2 + 42 * cxChar, cyClient / 16 + 4 * cyChar + 2 * cyClient / 3 + 2 * cyChar, 7 * cxClient / 8 - 7 * cxChar - ((cxClient / 4 - 12 * cxChar) / 2 + 42 * cxChar), static_cast<int>(1.5 * cyChar), true);
 	pOK->CMoveWindow(7 * cxClient / 8 - 3 * cxChar, cyClient / 16 + 4 * cyChar + 2 * cyClient / 3 + 2 * cyChar, 10 * cxChar, static_cast<int>(1.5 * cyChar), true);
-	pTreeListView->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 16 + 4 * cyChar, 3 * cxClient / 4 + 13 * cxChar, 2 * cyClient / 3);
+	//pTreeListView->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 16 + 4 * cyChar, 3 * cxClient / 4 + 13 * cxChar, 2 * cyClient / 3);
 	//pchecklist->ChangeColumnSize(0, 3 * cxClient / 8);
 	//pchecklist->ChangeColumnSize(1, 3 * cxClient / 8);
 	pchecklist->AutoAdjustColumnSize(0);
@@ -338,14 +349,24 @@ LRESULT YoukuWindow::SubEditProc(HWND wnd, UINT msg, WPARAM wParam, LPARAM lPara
 }
 void YoukuWindow::OnUserDefined(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	if (lParam) {
-		ShowWindow(GetDlgItem(hwnd, ID_CONSOLE), SW_HIDE);
-		ShowWindow(GetDlgItem(hwnd, ID_LISTCHECKBOX), SW_SHOW);
+		//ShowWindow(GetDlgItem(hwnd, ID_CONSOLE), SW_HIDE);
+		//ShowWindow(GetDlgItem(hwnd, ID_LISTCHECKBOX), SW_SHOW);
+		pConsole->Hide();
+		pchecklist->Show();
+		pOK->Show();
+		pPath->Show();
+		pPathTitle->Show();
+		pSelectAll->Show();
+		pInvSelect->Show();
+		pSelectFolder->Show();
 	}
 }
 
 void YoukuWindow::OnGoButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
-	ShowWindow(GetDlgItem(hwnd, ID_CONSOLE), SW_SHOW);
-	ShowWindow(GetDlgItem(hwnd, ID_LISTCHECKBOX), SW_HIDE);
+	pConsole->Show();
+	pchecklist->Hide();
+	//ShowWindow(GetDlgItem(hwnd, ID_CONSOLE), SW_SHOW);
+	//ShowWindow(GetDlgItem(hwnd, ID_LISTCHECKBOX), SW_HIDE);
 	HWND hwndEdit = GetDlgItem(hwnd, ID_EDIT);
 	size_t length = SendMessage(hwndEdit, EM_LINELENGTH, 0, 0);
 	if (length == 0) {
@@ -376,8 +397,45 @@ void YoukuWindow::ParseThread() {
 }
 
 void YoukuWindow::OnOKButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
-	ShowWindow(GetDlgItem(hwnd, ID_CONSOLE), SW_SHOW);
-	ShowWindow(GetDlgItem(hwnd, ID_LISTCHECKBOX), SW_HIDE);
+	//ShowWindow(GetDlgItem(hwnd, ID_CONSOLE), SW_SHOW);
+	//ShowWindow(GetDlgItem(hwnd, ID_LISTCHECKBOX), SW_HIDE);
+	pConsole->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 2, 3 * cxClient / 4 + 13 * cxChar, 1 * cyClient / 3, true);
+	pConsole->Show();
+	pchecklist->Hide();
+	pTreeListView->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 16 + 4 * cyChar, 3 * cxClient / 4 + 13 * cxChar, 1 * cyClient / 3);
+	pTreeListView->Show();
+	pOK->Hide();
+	pPath->Hide();
+	pPathTitle->Hide();
+	pSelectAll->Hide();
+	pInvSelect->Hide();
+	pSelectFolder->Hide();
+
+	for (size_t i = 0; i < videolist.size(); ++i) {
+		if (!videolist[i].bChecked) {
+			continue;
+		}
+		CImageList* pStatus;
+		pStatus = new CImageList(48, 48, 0, 5, 5);
+		pStatus->AddFromResourceID(IDB_STOP);
+		pStatus->AddFromResourceID(IDB_PLAY);
+		pStatus->AddFromResourceID(IDB_WAIT);
+		pStatus->AddFromResourceID(IDB_FINISH);
+		pStatus->AddFromResourceID(IDB_FAIL);
+		pStatus->SetCurrentImage(2);//initial is wait icon
+		CProgressBar* pProgressBar;
+		pProgressBar = new CProgressBar(TEXT(""), WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(0), reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)));
+		//AddNode will copy all information to the heap, so here no need to put all information to heap
+		TreeListNodeData status = { nullptr, pStatus, nullptr, IMAGELIST, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+		TreeListNodeData name = { new tstring(videolist[i].name), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255,255,255), RGB(0,0,0), RGB(0,0,200), false, 0 };
+		TreeListNodeData progress = { nullptr, nullptr, pProgressBar, HWINDOW, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+		TreeListNodeData percentage = { new tstring(TEXT("0%")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+		TreeListNodeData speed = { new tstring(TEXT("0.00")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+		//vector<TreeListNodeData*> cannot pass into function, maybe because TreeListData has no copy constructor, just cast to void and pass and cast back in AddNode function
+		vector<void*> row = { &status, &name, &progress, &percentage, &speed };
+		pTreeListView->AddNode(nullptr, row, videolist[i].url);
+	}
+	
 	for (size_t i = 0; i < videolist.size(); ++i) {
 		if (videolist[i].bChecked) {
 			thread m3u8thread(&YoukuWindow::m3u8Thread, this, videolist[i].url, i);
@@ -388,6 +446,15 @@ void YoukuWindow::OnOKButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM 
 
 void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 	mtx.lock();
+
+	if ((*pTreeListView->GetAllRootNode()).find(videoURL) != (*pTreeListView->GetAllRootNode()).cend()) {
+		TreeListNode* root = (*pTreeListView->GetAllRootNode()).at(videoURL);
+		root->pNodeData[0]->pimagelist->SetCurrentImage(2);//set the status icon to play
+	} else {
+		*pconsole << TEXT("The current video URL: ") << videoURL << TEXT(" does not have a tree node in the treelistview!") << endl;
+	}
+
+	
 	tstring vid = getVid(videoURL);
 	tstring JSONurl = getJSONUrl(vid);
 	httpclient hc(*pconsole);
@@ -564,9 +631,31 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 				for (auto link : videolinks.links.at(item)) {
 					*pconsole << link << endl << endl;
 				}
+				
+				CImageList* pStatus;
+				pStatus = new CImageList(48, 48, 0, 5, 5);
+				pStatus->AddFromResourceID(IDB_STOP);
+				pStatus->AddFromResourceID(IDB_PLAY);
+				pStatus->AddFromResourceID(IDB_WAIT);
+				pStatus->AddFromResourceID(IDB_FINISH);
+				pStatus->AddFromResourceID(IDB_FAIL);
+				pStatus->SetCurrentImage(2);//initial is wait icon
+				CProgressBar* pProgressBar;
+				pProgressBar = new CProgressBar(TEXT(""), WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(0), reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)));
+				//AddNode will copy all information to the heap, so here no need to put all information to heap
+				TreeListNodeData status = { nullptr, pStatus, nullptr, IMAGELIST, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+				TreeListNodeData name = { new tstring(item), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255,255,255), RGB(0,0,0), RGB(0,0,200), false, 0 };
+				TreeListNodeData progress = { nullptr, nullptr, pProgressBar, HWINDOW, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+				TreeListNodeData percentage = { new tstring(TEXT("0%%")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+				TreeListNodeData speed = { new tstring(TEXT("0.00")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+				//vector<TreeListNodeData*> cannot pass into function, maybe because TreeListData has no copy constructor, just cast to void and pass and cast back in AddNode function
+				vector<void*> row = { &status, &name, &progress, &percentage, &speed };
+				pTreeListView->AddNode((*pTreeListView->GetAllRootNode()).at(videoURL), row, videolinks.links.at(item).front());
+				
 			} else {
 				*pconsole << TEXT("error: there is no download link for ") << item << endl;
 			}
+
 		}
 		tstring originalpath = DownloadPath;
 		if (originalpath.back() == TEXT('\0')) {
@@ -581,11 +670,15 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 		} else {
 			string whole;
 			vector<string> videofilelist;
+
 			for (auto item : videolinks.order) {
 				if (videolinks.links.find(item) != videolinks.links.cend()) {
 					auto link = videolinks.links.at(item)[0];
 					string videobuffer;
-					if (!hc.GetVideo(link, videobuffer)) {
+					(*pTreeListView->GetAllRootNode()).at(videoURL)->AllSiblings.at(link)->pNodeData[0]->pimagelist->SetCurrentImage(1);//set the partil file status icon to play
+				//	if (!hc.GetVideo(link, videobuffer, &tstring(), &tstring())) {
+					if (!hc.GetVideo(link, videobuffer, (*pTreeListView->GetAllRootNode()).at(videoURL)->AllSiblings.at(link)->pNodeData[4]->text, (*pTreeListView->GetAllRootNode()).at(videoURL)->AllSiblings.at(link)->pNodeData[3]->text)) {
+						(*pTreeListView->GetAllRootNode()).at(videoURL)->AllSiblings.at(link)->pNodeData[0]->pimagelist->SetCurrentImage(4);//set the partil file status icon to fail
 						mtx.unlock();
 						return;
 					}
@@ -597,14 +690,17 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 					if (!out.fail()) {
 						out << videobuffer;
 						out.close();
+						(*pTreeListView->GetAllRootNode()).at(videoURL)->AllSiblings.at(link)->pNodeData[0]->pimagelist->SetCurrentImage(3);//set the partil file status icon to success
 					} else {
 						*pconsole << TEXT("create/open file failed!") << endl;
 						out.close();
+						(*pTreeListView->GetAllRootNode()).at(videoURL)->AllSiblings.at(link)->pNodeData[0]->pimagelist->SetCurrentImage(4);//set the partil file status icon to fail
 					}
 					//}
 
 				} else {
 					*pconsole << TEXT("error: there is no download link for ") << item << endl;
+					(*pTreeListView->GetAllRootNode()).at(videoURL)->pNodeData[0]->pimagelist->SetCurrentImage(4);//set the partil file status icon to fail
 				}
 			}
 			concat_flv(videofilelist, whole);
@@ -615,9 +711,11 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 			if (!out.fail()) {
 				out << whole;
 				out.close();
+				(*pTreeListView->GetAllRootNode()).at(videoURL)->pNodeData[0]->pimagelist->SetCurrentImage(3);//set the partil file status icon to success
 			} else {
 				*pconsole << TEXT("create/open file failed!") << endl;
 				out.close();
+				(*pTreeListView->GetAllRootNode()).at(videoURL)->pNodeData[0]->pimagelist->SetCurrentImage(4);//set the partil file status icon to fail
 			}
 
 		}

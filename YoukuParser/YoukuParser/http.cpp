@@ -379,7 +379,7 @@ bool httpclient::downloadTXTfile(tstring& file) {
 	return false;
 }
 
-bool httpclient::downloadBINfile(string& file) {
+bool httpclient::downloadBINfile(string& file, tstring* speed, tstring* percentageSTR) {
 	char Buffer[1024];
 	DWORD BufferLen = 0, errorcode;
 	BOOL result;
@@ -392,7 +392,7 @@ bool httpclient::downloadBINfile(string& file) {
 		return false;
 	}
 	speedo.Reset();
-	tstring speed = TEXT("downloading speed estimating...");
+	*speed = TEXT("downloading speed estimating...");
 	do {
 		result = InternetReadFile(/*hURL*/hHttpRequest, Buffer, 1024, &BufferLen);
 		if (!result) {
@@ -404,10 +404,11 @@ bool httpclient::downloadBINfile(string& file) {
 			file.append(Buffer, BufferLen);
 			percentage = static_cast<int>(static_cast<int>(file.size()) / static_cast<double>(resource_size) * 100);
 			speedo.FeedNewSize(BufferLen);
-			if (percentage > prevpercentage || speedo.NeedUpdate(speed)) {
+			if (percentage > prevpercentage || speedo.NeedUpdate(*speed)) {
 				prevpercentage = percentage;
 				output || endl;
-				output << TEXT("Downloading progress: ") << prevpercentage << TEXT("%    ") << speed;
+				output << TEXT("Downloading progress: ") << prevpercentage << TEXT("%    ") << *speed;
+				*percentageSTR = to_tstring(percentage) + TEXT("%");
 			}
 		}
 	} while (result && BufferLen != 0);
@@ -431,13 +432,13 @@ bool httpclient::GetHtml(const tstring & url, tstring& html) {
 	}
 	return false;
 }
-bool httpclient::GetVideo(const tstring &url, string& video) {
+bool httpclient::GetVideo(const tstring &url, string& video, tstring* speed, tstring* percentage) {
 	bool result = false;
 	int tries = 20;
 	do {
 		video.clear();
 		if (EstablishConnection(url, tstring(), false, nullptr)) {
-			result = downloadBINfile(video);
+			result = downloadBINfile(video, speed, percentage);
 			InternetCloseHandle(hHttpRequest);
 			InternetCloseHandle(hHttpSession);
 			InternetCloseHandle(hIntSession);
