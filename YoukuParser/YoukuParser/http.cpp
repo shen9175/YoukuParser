@@ -379,7 +379,7 @@ bool httpclient::downloadTXTfile(tstring& file) {
 	return false;
 }
 
-bool httpclient::downloadBINfile(string& file, tstring* speed, tstring* percentageSTR) {
+bool httpclient::downloadBINfile(const tstring &link, string& file, const tstring& videoURL, CTreeListView* pTree) {
 	char Buffer[1024];
 	DWORD BufferLen = 0, errorcode;
 	BOOL result;
@@ -392,7 +392,12 @@ bool httpclient::downloadBINfile(string& file, tstring* speed, tstring* percenta
 		return false;
 	}
 	speedo.Reset();
+	tstring* speed = pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[4]->text;
+	tstring* percentageSTR = pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[3]->text;
+	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetRange(0, 100);
+	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetStep(1);
 	*speed = TEXT("downloading speed estimating...");
+	pTree->Invalidate(nullptr, true);
 	do {
 		result = InternetReadFile(/*hURL*/hHttpRequest, Buffer, 1024, &BufferLen);
 		if (!result) {
@@ -405,10 +410,13 @@ bool httpclient::downloadBINfile(string& file, tstring* speed, tstring* percenta
 			percentage = static_cast<int>(static_cast<int>(file.size()) / static_cast<double>(resource_size) * 100);
 			speedo.FeedNewSize(BufferLen);
 			if (percentage > prevpercentage || speedo.NeedUpdate(*speed)) {
+				pTree->Invalidate(&pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[4]->rect, true);
 				prevpercentage = percentage;
 				output || endl;
 				output << TEXT("Downloading progress: ") << prevpercentage << TEXT("%    ") << *speed;
 				*percentageSTR = to_tstring(percentage) + TEXT("%");
+				pTree->Invalidate(&pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[3]->rect, true);
+				pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->StepIt();
 			}
 		}
 	} while (result && BufferLen != 0);
@@ -432,13 +440,13 @@ bool httpclient::GetHtml(const tstring & url, tstring& html) {
 	}
 	return false;
 }
-bool httpclient::GetVideo(const tstring &url, string& video, tstring* speed, tstring* percentage) {
+bool httpclient::GetVideo(const tstring &url, string& video,  const tstring& videoURL, CTreeListView* pTree) {
 	bool result = false;
 	int tries = 20;
 	do {
 		video.clear();
 		if (EstablishConnection(url, tstring(), false, nullptr)) {
-			result = downloadBINfile(video, speed, percentage);
+			result = downloadBINfile(url, video, videoURL, pTree);
 			InternetCloseHandle(hHttpRequest);
 			InternetCloseHandle(hHttpSession);
 			InternetCloseHandle(hIntSession);

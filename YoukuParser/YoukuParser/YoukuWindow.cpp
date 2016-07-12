@@ -424,16 +424,18 @@ void YoukuWindow::OnOKButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM 
 		pStatus->AddFromResourceID(IDB_FAIL);
 		pStatus->SetCurrentImage(2);//initial is wait icon
 		CProgressBar* pProgressBar;
-		pProgressBar = new CProgressBar(TEXT(""), WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(0), reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)));
+		pProgressBar = new CProgressBar(TEXT(""), WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, pTreeListView->GetWndHandle(), reinterpret_cast<HMENU>(0), reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)));
+		//pProgressBar->Show();
 		//AddNode will copy all information to the heap, so here no need to put all information to heap
-		TreeListNodeData status = { nullptr, pStatus, nullptr, IMAGELIST, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
-		TreeListNodeData name = { new tstring(videolist[i].name), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255,255,255), RGB(0,0,0), RGB(0,0,200), false, 0 };
-		TreeListNodeData progress = { nullptr, nullptr, pProgressBar, HWINDOW, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
-		TreeListNodeData percentage = { new tstring(TEXT("0%")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
-		TreeListNodeData speed = { new tstring(TEXT("0.00")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+		TreeListNodeData status = {{0,0,0,0}, nullptr, pStatus, nullptr, IMAGELIST, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0};
+		TreeListNodeData name = { { 0,0,0,0 }, new tstring(videolist[i].name), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255,255,255), RGB(0,0,0), RGB(0,0,200), false, 0};
+		TreeListNodeData progress = { { 0,0,0,0 }, nullptr, nullptr, pProgressBar, HWINDOW, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0};
+		TreeListNodeData percentage = { { 0,0,0,0 }, new tstring(TEXT("0%")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0};
+		TreeListNodeData speed = { { 0,0,0,0 }, new tstring(TEXT("0.00")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0};
 		//vector<TreeListNodeData*> cannot pass into function, maybe because TreeListData has no copy constructor, just cast to void and pass and cast back in AddNode function
 		vector<void*> row = { &status, &name, &progress, &percentage, &speed };
 		pTreeListView->AddNode(nullptr, row, videolist[i].url);
+		pTreeListView->Invalidate();
 	}
 	
 	for (size_t i = 0; i < videolist.size(); ++i) {
@@ -641,16 +643,18 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 				pStatus->AddFromResourceID(IDB_FAIL);
 				pStatus->SetCurrentImage(2);//initial is wait icon
 				CProgressBar* pProgressBar;
-				pProgressBar = new CProgressBar(TEXT(""), WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(0), reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)));
+				pProgressBar = new CProgressBar(TEXT(""), WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, pTreeListView->GetWndHandle(), reinterpret_cast<HMENU>(0), reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)));
+				pProgressBar->Show();
 				//AddNode will copy all information to the heap, so here no need to put all information to heap
-				TreeListNodeData status = { nullptr, pStatus, nullptr, IMAGELIST, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
-				TreeListNodeData name = { new tstring(item), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255,255,255), RGB(0,0,0), RGB(0,0,200), false, 0 };
-				TreeListNodeData progress = { nullptr, nullptr, pProgressBar, HWINDOW, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
-				TreeListNodeData percentage = { new tstring(TEXT("0%%")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
-				TreeListNodeData speed = { new tstring(TEXT("0.00")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+				TreeListNodeData status = { { 0,0,0,0 }, nullptr, pStatus, nullptr, IMAGELIST, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0};
+				TreeListNodeData name = { { 0,0,0,0 },  new tstring(item), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255,255,255), RGB(0,0,0), RGB(0,0,200), false, 0 };
+				TreeListNodeData progress = { { 0,0,0,0 },  nullptr, nullptr, pProgressBar, HWINDOW, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+				TreeListNodeData percentage = { { 0,0,0,0 },  new tstring(TEXT("0%")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0 };
+				TreeListNodeData speed = { { 0,0,0,0 },  new tstring(TEXT("0.00")), nullptr, nullptr, TEXT, false, false, nullptr, false, RGB(255, 255, 255), RGB(0, 0, 0), RGB(0, 0, 200), false, 0};
 				//vector<TreeListNodeData*> cannot pass into function, maybe because TreeListData has no copy constructor, just cast to void and pass and cast back in AddNode function
 				vector<void*> row = { &status, &name, &progress, &percentage, &speed };
 				pTreeListView->AddNode((*pTreeListView->GetAllRootNode()).at(videoURL), row, videolinks.links.at(item).front());
+				pTreeListView->Invalidate();
 				
 			} else {
 				*pconsole << TEXT("error: there is no download link for ") << item << endl;
@@ -677,7 +681,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 					string videobuffer;
 					(*pTreeListView->GetAllRootNode()).at(videoURL)->AllSiblings.at(link)->pNodeData[0]->pimagelist->SetCurrentImage(1);//set the partil file status icon to play
 				//	if (!hc.GetVideo(link, videobuffer, &tstring(), &tstring())) {
-					if (!hc.GetVideo(link, videobuffer, (*pTreeListView->GetAllRootNode()).at(videoURL)->AllSiblings.at(link)->pNodeData[4]->text, (*pTreeListView->GetAllRootNode()).at(videoURL)->AllSiblings.at(link)->pNodeData[3]->text)) {
+					if (!hc.GetVideo(link, videobuffer, videoURL, pTreeListView)) {
 						(*pTreeListView->GetAllRootNode()).at(videoURL)->AllSiblings.at(link)->pNodeData[0]->pimagelist->SetCurrentImage(4);//set the partil file status icon to fail
 						mtx.unlock();
 						return;

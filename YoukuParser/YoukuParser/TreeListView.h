@@ -57,9 +57,10 @@ typedef enum {
 ///////////////////////////////////////////////////////////////////////////////////////
 enum NodeDataType { IMAGELIST, HWINDOW, TEXT } ;
 struct TreeListNodeData {
+	RECT						rect;
 	tstring*                    text;
 	CImageList*					pimagelist;
-	CWnd*						pWindow;
+	CProgressBar*				pWindow;
 	NodeDataType				type;
 	bool                        Editable;
 	bool                        Numeric;
@@ -73,6 +74,7 @@ struct TreeListNodeData {
 };
 
 struct TreeListNode {
+	TreeListNode() { NodeDataCount = 0; memset(&TreeItemHandle, 0, sizeof(HTREEITEM)); pParennt = nullptr; pSibling = nullptr; pBrother = nullptr; }
 	int											NodeDataCount;       // Count of items in pNodeData
 	HTREEITEM									TreeItemHandle;
 	TreeListNode*								pParennt;
@@ -151,7 +153,10 @@ public:
 	TreeListNode* AddNode(TreeListNode* pParentNode, const vector<void*>& RowOfColumns, const tstring& name);
 	void Show() { ShowWindow(HwndTreeView, SW_SHOW);  ShowWindow(HwndHeader, SW_SHOW);}
 	void Hide() { ShowWindow(HwndTreeView, SW_HIDE); ShowWindow(HwndHeader, SW_HIDE);}
+	void Invalidate(const RECT* lpRECT, bool repaint) { InvalidateRect(HwndTreeView, lpRECT, repaint); }
+	void Invalidate() { InvalidateRect(HwndTreeView, nullptr, true); }
 	void CMoveWindow(int x, int y, int width, int height) { RectRequested.left = x, RectRequested.right = x + width; RectRequested.top = y; RectRequested.bottom = y + height;TreeList_Internal_RepositionControls(); }
+	HWND GetWndHandle() { return HwndTreeView; }
 	static LRESULT CALLBACK Static_TreeList_Internal_HandleEditBoxMessages(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK Static_TreeList_Internal_HandleTreeMessagesEx(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK Static_TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);

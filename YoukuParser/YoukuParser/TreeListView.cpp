@@ -17,21 +17,8 @@
 
 #define TREELIST_WM_EDIT_NODE                   (WM_USER + 100)
 #define TREELIST_WM_EDIT_ENTER                  (WM_USER + 101)
-//#define TREELIST_ELEMENTS_PER_INSTANCE          4
-//#define TREELIST_PROP_VAL                       TEXT("TREELIST_PTR")
 
 //#define TREELIST_DOUBLE_BUFFEING
-
-//typedef HANDLE(CALLBACK* LPREMOVEPROP)(HWND, LPCTSTR);  // VC2010 issue
-
-
-
-
-
-// Dictionary pointer that will hold the ref count and HWND for each instance of the control
-// a pointer to the dictionary will be attached to the parent window of the control.
-// This array will be updated with each instance and destroyed when the last control will be terminated.
-
 
 
 
@@ -118,7 +105,7 @@ TreeListNode* CTreeListView::TreeList_Internal_NodeCreateNew() {
 
 	pTmpNode = new TreeListNode;
 	if (pTmpNode) {
-		std::memset(pTmpNode, 0, sizeof(TreeListNode));
+		//std::memset(pTmpNode, 0, sizeof(TreeListNode));
 		AllocatedTreeBytes += sizeof(TreeListNode);
 		pTmpNode->pNodeData.resize(ColumnsCount);
 	}
@@ -243,6 +230,7 @@ TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent, co
 	// Normal cases where there is a root node and we got the parent
 
 	// Validate the parent integrity (NodeData crc)
+	/*
 	for (Nodes = 0;Nodes < pParent->NodeDataCount;Nodes++) {
 		if (pParent->pNodeData[Nodes]) {
 			if (!TreeList_Internal_CRCCheck(pParent->pNodeData[Nodes], (sizeof(TreeListNodeData) - sizeof(pParent->pNodeData[Nodes]->CRC)), pParent->pNodeData[Nodes]->CRC))
@@ -250,6 +238,7 @@ TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent, co
 		}
 
 	}
+	*/
 	// Be the last brother of our parent's siblig
 	pNewNode = TreeList_Internal_NodeCreateNew();
 	if (pNewNode) {
@@ -855,23 +844,20 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 		// Double Buffering, might kill the flickering
 #ifdef TREELIST_DOUBLE_BUFFEING
 
-		hDC = BeginPaint(hWnd, &pSession->PaintStruct);
+		hDC = BeginPaint(hWnd, &PaintStruct);
 		if (hDC) {
-			RetVal = TRUE;
-			hDCMem = CreateCompatibleDC(NULL);
-
-			// Select the bitmap within the DC:
-			hBitMapMem = CreateCompatibleBitmap(hDC, 800, 600);
-			hOldBitMap = SelectObject(hDCMem, hBitMapMem);
-			GetClientRect(pSession->HwndTreeView, &pSession->RectTree);
-			BitBlt(hDC, 0, 0, pSession->RectTree.right, pSession->RectTree.bottom, hDCMem, 0, 0, SRCCOPY);
+			RetVal = true;
+			hDCMem = CreateCompatibleDC(hDC);
+			GetClientRect(HwndTreeView, &RectTree);
+			hBitMapMem = CreateCompatibleBitmap(hDC, RectTree.right, RectTree.bottom);
+			hOldBitMap = reinterpret_cast<HBITMAP>(SelectObject(hDCMem, hBitMapMem));
+			BitBlt(hDC, 0, 0, RectTree.right, RectTree.bottom, hDCMem, 0, 0, SRCCOPY);
 			SelectObject(hDCMem, hOldBitMap);
 
 			DeleteObject(hBitMapMem);
 			DeleteDC(hDCMem);
-			EndPaint(hWnd, &pSession->PaintStruct);
-
 		}
+		EndPaint(hWnd, &PaintStruct);
 #endif
 
 	}
@@ -1106,6 +1092,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 				DrawEdge(hDC, &RectItem, BDR_SUNKENINNER, BF_BOTTOM);
 
 				// Draw Label, calculate the rect first
+				memcpy(&pNode->pNodeData[0]->rect, &RectText, sizeof(RECT));
 				if (pNode->pNodeData[0]->type == TEXT) {
 					DrawText(hDC, pNode->pNodeData[0]->text->c_str(), static_cast<int>(pNode->pNodeData[0]->text->size()), &RectText, DT_NOPREFIX | DT_CALCRECT);
 				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
@@ -1141,7 +1128,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 
 				RectText.right = RectHeaderItem.right; // Set the right side
 				TreeList_Internal_DeflateRectEx(&RectText, 2, 1); // Defalate it
-
+				memcpy(&pNode->pNodeData[0]->rect, &RectText, sizeof(RECT));
 				if (pNode->pNodeData[0]->type == TEXT) {
 					DrawText(hDC, pNode->pNodeData[0]->text->c_str(), static_cast<int>(pNode->pNodeData[0]->text->size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
 				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
@@ -1189,7 +1176,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 									SetTextColor(hDC, pNode->pNodeData[iCol]->AltertedTextColor);
 
 							}
-
+							memcpy(&pNode->pNodeData[iCol]->rect, &RectText, sizeof(RECT));
 							if (pNode->pNodeData[iCol]->type == TEXT) {
 								DrawText(hDC, pNode->pNodeData[iCol]->text->c_str(), static_cast<int>(pNode->pNodeData[iCol]->text->size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
 							} else if (pNode->pNodeData[iCol]->type == IMAGELIST) {
