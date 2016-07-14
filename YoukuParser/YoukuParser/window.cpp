@@ -439,6 +439,9 @@ int CImageList::AddFromResourceID(DWORD  hbmImageID, DWORD hbmMask) {
 	DeleteObject(image);
 	return ret;
 }
+bool CImageList::DrawImage(HDC hdc, int x, int y, int width, int height, COLORREF rgbBk, COLORREF rgbFg, UINT style) {
+	return ImageList_DrawEx(handle, current, hdc, x, y, width, height, rgbBk, rgbFg,style);
+}
 CImageList::~CImageList() {
 	if (!ImageList_Destroy(handle)) {
 		tstring message = TEXT("ImageList Destroy Failed!");

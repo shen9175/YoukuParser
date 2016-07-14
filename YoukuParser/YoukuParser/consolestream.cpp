@@ -21,7 +21,7 @@ ConsoleStream::~ConsoleStream() {
 	 SendMessage(os.display, EM_SETSEL, -1, -1);
 	 SendMessage(os.display, EM_SCROLLCARET, 0, 0);
 	 */
-	 InvalidateRect(os.display, nullptr, true);
+	 InvalidateRect(os.display, nullptr, false);
 	 return os;
 }
  ConsoleStream& operator<<(ConsoleStream& os, const int& number) {
@@ -38,7 +38,7 @@ ConsoleStream::~ConsoleStream() {
 	 SendMessage(os.display, EM_SETSEL, -1, -1);
 	 SendMessage(os.display, EM_SCROLLCARET, 0, 0);
 	 */
-	 InvalidateRect(os.display, nullptr, true);
+	 InvalidateRect(os.display, nullptr, false);
 	 return os;
  }
 // for << endl-->endl is a function pointer of type totream&(*pf)(tostream&), pf is the function pointer variable identifier
@@ -56,7 +56,7 @@ ConsoleStream::~ConsoleStream() {
 	 SendMessage(os.display, EM_SETSEL, -1, -1);
 	 SendMessage(os.display, EM_SCROLLCARET, 0, 0);
 	 */
-	 InvalidateRect(os.display, nullptr, true);
+	 InvalidateRect(os.display, nullptr, false);
 	 return os;
  }
 
@@ -68,7 +68,7 @@ ConsoleStream::~ConsoleStream() {
 	 //int idx = GetWindowTextLength(os.display);
 	// SendMessage(os.display, EM_SETSEL, static_cast<WPARAM>(idx), static_cast<LPARAM>(idx));
 	 SendMessage(os.display, EM_REPLACESEL, 0, reinterpret_cast<LPARAM>(&text[0]));
-	 InvalidateRect(os.display, nullptr, true);
+	 InvalidateRect(os.display, nullptr, false);
 	 return os;
  }
  ConsoleStream& operator||(ConsoleStream& os, const int& number) {
@@ -81,7 +81,7 @@ ConsoleStream::~ConsoleStream() {
 	// int idx = GetWindowTextLength(os.display);
 	// SendMessage(os.display, EM_SETSEL, static_cast<WPARAM>(idx), static_cast<LPARAM>(idx));
 	 SendMessage(os.display, EM_REPLACESEL, 0, reinterpret_cast<LPARAM>(&(*temp)[0]));
-	 InvalidateRect(os.display, nullptr, true);
+	 InvalidateRect(os.display, nullptr, false);
 	 return os;
  }
  // for << endl-->endl is a function pointer of type totream&(*pf)(tostream&), pf is the function pointer variable identifier
@@ -112,7 +112,7 @@ ConsoleStream::~ConsoleStream() {
 	 int end = start + length;
 	 SendMessage(os.display, EM_SETSEL, start, end);//select the last line
 	 SendMessage(os.display, EM_REPLACESEL, 0, reinterpret_cast<LPARAM>(TEXT("")));//replace with empty string
-	 InvalidateRect(os.display, nullptr, true);
+	 InvalidateRect(os.display, nullptr, false);
 	 return os;
  }
 

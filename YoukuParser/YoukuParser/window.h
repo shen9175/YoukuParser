@@ -20,6 +20,7 @@ public:
 	virtual void OnUserDefined(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {}
 	virtual void CSetFocus() { SetFocus(hwnd); }
 	virtual void CMoveWindow(int x, int y, int width, int height, bool repaint);
+	virtual void CInvalidate(RECT* lpRECT, bool repaint) { InvalidateRect(hwnd, lpRECT, repaint); }
 	void SetAppName(const tstring & name) { szAppName = name; wndclass.lpszClassName = szAppName.c_str(); }
 	void SetWndCaption(const tstring& caption) { szCaption = caption; }
 	void SetMenu(const HMENU& menu) { hMenu = menu; }
@@ -182,6 +183,7 @@ public:
 	void SetCurrentImage(int n) { current = n; }
 	int GetCurrentImage() { return current; }
 	HIMAGELIST GetHandle() { return handle; }
+	bool DrawImage(HDC hdc, int x, int y, int width, int height, COLORREF rgbBk, COLORREF rgbFg, UINT style);
 private:
 	HIMAGELIST handle;
 	int current;

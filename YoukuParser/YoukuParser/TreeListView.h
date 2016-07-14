@@ -57,7 +57,7 @@ typedef enum {
 ///////////////////////////////////////////////////////////////////////////////////////
 enum NodeDataType { IMAGELIST, HWINDOW, TEXT } ;
 struct TreeListNodeData {
-	RECT						rect;
+	//RECT						rect;
 	tstring*                    text;
 	CImageList*					pimagelist;
 	CProgressBar*				pWindow;

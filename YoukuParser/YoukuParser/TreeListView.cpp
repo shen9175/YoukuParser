@@ -230,7 +230,7 @@ TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent, co
 	// Normal cases where there is a root node and we got the parent
 
 	// Validate the parent integrity (NodeData crc)
-	/*
+
 	for (Nodes = 0;Nodes < pParent->NodeDataCount;Nodes++) {
 		if (pParent->pNodeData[Nodes]) {
 			if (!TreeList_Internal_CRCCheck(pParent->pNodeData[Nodes], (sizeof(TreeListNodeData) - sizeof(pParent->pNodeData[Nodes]->CRC)), pParent->pNodeData[Nodes]->CRC))
@@ -238,7 +238,7 @@ TreeListNode* CTreeListView::TreeList_Internal_AddNode(TreeListNode *pParent, co
 		}
 
 	}
-	*/
+
 	// Be the last brother of our parent's siblig
 	pNewNode = TreeList_Internal_NodeCreateNew();
 	if (pNewNode) {
@@ -723,7 +723,8 @@ LRESULT CTreeListView::TreeList_Internal_HandleEditBoxMessages(HWND hWnd, UINT M
 LRESULT CTreeListView::TreeList_Internal_HandleTreeMessagesEx(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 
 	switch (Msg) {
-
+		case WM_ERASEBKGND:
+			return 0;
 		case WM_VSCROLL: // Trap the vertical scroll
 		{
 
@@ -1092,16 +1093,21 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 				DrawEdge(hDC, &RectItem, BDR_SUNKENINNER, BF_BOTTOM);
 
 				// Draw Label, calculate the rect first
-				memcpy(&pNode->pNodeData[0]->rect, &RectText, sizeof(RECT));
+				//memcpy(&pNode->pNodeData[0]->rect, &RectText, sizeof(RECT));
 				if (pNode->pNodeData[0]->type == TEXT) {
 					DrawText(hDC, pNode->pNodeData[0]->text->c_str(), static_cast<int>(pNode->pNodeData[0]->text->size()), &RectText, DT_NOPREFIX | DT_CALCRECT);
 				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
-
+					bool ret = pNode->pNodeData[0]->pimagelist->DrawImage(hDC, RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, RGB(255, 255, 255), RGB(0, 0, 0), ILD_BLEND);
+				//	if (!ret) {
+				//		DWORD errorcode = GetLastError();
+				//		MessageBox(nullptr, TEXT("ImageList draw wrong!"), to_tstring(errorcode).c_str(), MB_OK);
+				//	}
 				} else if (pNode->pNodeData[0]->type == HWINDOW) {
-					pNode->pNodeData[0]->pWindow->CMoveWindow(RectText.left, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
+					pNode->pNodeData[0]->pWindow->CMoveWindow(RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
 					pNode->pNodeData[0]->pWindow->Show();
+					SetWindowPos(HwndTreeView, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 				}
-				
+
 				RectLabel.right = TREELIST_MIN((RectLabel.left + RectText.right + 4), ColumnsInfo[0]->Width - 4);
 
 				if ((RectLabel.right - RectLabel.left) < 0)
@@ -1128,14 +1134,15 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 
 				RectText.right = RectHeaderItem.right; // Set the right side
 				TreeList_Internal_DeflateRectEx(&RectText, 2, 1); // Defalate it
-				memcpy(&pNode->pNodeData[0]->rect, &RectText, sizeof(RECT));
+				//memcpy(&pNode->pNodeData[0]->rect, &RectText, sizeof(RECT));
 				if (pNode->pNodeData[0]->type == TEXT) {
 					DrawText(hDC, pNode->pNodeData[0]->text->c_str(), static_cast<int>(pNode->pNodeData[0]->text->size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
 				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
-					
+					bool ret = pNode->pNodeData[0]->pimagelist->DrawImage(hDC, RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, RGB(255, 255, 255), RGB(0, 0, 0), ILD_BLEND);
 				} else if (pNode->pNodeData[0]->type == HWINDOW) {
-					pNode->pNodeData[0]->pWindow->CMoveWindow(RectText.left, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
+					pNode->pNodeData[0]->pWindow->CMoveWindow(RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
 					pNode->pNodeData[0]->pWindow->Show();
+					SetWindowPos(HwndTreeView, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 				}
 
 				iOffSet = ColumnsInfo[0]->Width;
@@ -1176,14 +1183,15 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 									SetTextColor(hDC, pNode->pNodeData[iCol]->AltertedTextColor);
 
 							}
-							memcpy(&pNode->pNodeData[iCol]->rect, &RectText, sizeof(RECT));
+							//memcpy(&pNode->pNodeData[iCol]->rect, &RectText, sizeof(RECT));
 							if (pNode->pNodeData[iCol]->type == TEXT) {
 								DrawText(hDC, pNode->pNodeData[iCol]->text->c_str(), static_cast<int>(pNode->pNodeData[iCol]->text->size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
 							} else if (pNode->pNodeData[iCol]->type == IMAGELIST) {
-
+								bool ret = pNode->pNodeData[iCol]->pimagelist->DrawImage(hDC, RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, RGB(255, 255, 255), RGB(0, 0, 0), ILD_BLEND);
 							} else if (pNode->pNodeData[iCol]->type == HWINDOW) {
-								pNode->pNodeData[iCol]->pWindow->CMoveWindow(RectText.left, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
+								pNode->pNodeData[iCol]->pWindow->CMoveWindow(RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
 								pNode->pNodeData[iCol]->pWindow->Show();
+								SetWindowPos(HwndTreeView, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 							}
 
 						}
@@ -1192,6 +1200,179 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 				}
 
 				SetTextColor(hDC, RGB(0, 0, 0));
+
+
+/*
+				RECT rect;
+
+				hDCMem = CreateCompatibleDC(hDC);
+				GetClientRect(HwndTreeView, &rect);
+				hBitMapMem = CreateCompatibleBitmap(hDC, rect.right, rect.bottom);
+				hOldBitMap = reinterpret_cast<HBITMAP>(SelectObject(hDCMem, hBitMapMem));
+
+
+	
+
+
+
+
+
+				SetBkMode(hDCMem, TRANSPARENT);
+
+				if (TreeView_GetItemRect(HwndTreeView, hTreeItem, &RectLabel, true) == false) {
+					SelectObject(hDCMem, hOldBitMap);
+					DeleteObject(hBitMapMem);
+					DeleteDC(hDCMem);
+					return(CDRF_DODEFAULT); // No RECT
+				}
+
+				SetTextColor(hDCMem, RGB(0, 0, 0)); // Make sure we use black color
+				clTextBk = lpNMTVCustomDraw->clrTextBk;
+				clWnd = TreeView_GetBkColor(HwndTreeView);
+				brTextBk = CreateSolidBrush(clTextBk);
+				brWnd = CreateSolidBrush(clWnd);
+
+				// Clear the original label rectangle
+				RectLabel.right = RectTree.right;
+				FillRect(hDCMem, &RectLabel, brWnd);
+
+				ColumnsCount = Header_GetItemCount(HwndHeader);
+				if (ColumnsCount == -1) {
+					SelectObject(hDCMem, hOldBitMap);
+					DeleteObject(hBitMapMem);
+					DeleteDC(hDCMem);
+					return(CDRF_DODEFAULT); // No columns info, nothing to do
+				}
+
+											// Draw the horizontal lines
+				for (iCol = 0; iCol < ColumnsCount; iCol++) {
+					// Get current columns width from the header window
+					memset(&HeaderItem, 0, sizeof(HeaderItem));
+					HeaderItem.mask = HDI_HEIGHT | HDI_WIDTH;
+					if (Header_GetItem(HwndHeader, iCol, &HeaderItem)) {
+
+						ColumnsInfo[iCol]->Width = HeaderItem.cxy;
+						iOffSet += HeaderItem.cxy;
+						RectItem.right = iOffSet - 1;
+						DrawEdge(hDCMem, &RectItem, BDR_SUNKENINNER, BF_RIGHT);
+					}
+				}
+
+				// Draw the vertical lines
+				DrawEdge(hDCMem, &RectItem, BDR_SUNKENINNER, BF_BOTTOM);
+
+				// Draw Label, calculate the rect first
+				//memcpy(&pNode->pNodeData[0]->rect, &RectText, sizeof(RECT));
+				if (pNode->pNodeData[0]->type == TEXT) {
+					DrawText(hDCMem, pNode->pNodeData[0]->text->c_str(), static_cast<int>(pNode->pNodeData[0]->text->size()), &RectText, DT_NOPREFIX | DT_CALCRECT);
+				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
+
+				} else if (pNode->pNodeData[0]->type == HWINDOW) {
+					pNode->pNodeData[0]->pWindow->CMoveWindow(RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
+					pNode->pNodeData[0]->pWindow->Show();
+				}
+				
+				RectLabel.right = TREELIST_MIN((RectLabel.left + RectText.right + 4), ColumnsInfo[0]->Width - 4);
+
+				if ((RectLabel.right - RectLabel.left) < 0)
+					brTextBk = brWnd;
+
+				if (clTextBk != clWnd)  // Draw label's background
+				{
+
+					if (ItemWasSelected == true) {
+						SelectedLine = true;
+						SetTextColor(hDCMem, RGB(255, 255, 255));
+						RectLabel.right = RectTree.right;
+						FillRect(hDCMem, &RectLabel, brTextBk);
+					}
+				}
+
+				// Draw main label
+				memcpy(&RectText, &RectLabel, sizeof(RECT));
+
+				// The label right shoud be as the column right
+				if (Header_GetItemRect(HwndHeader, 0, &RectHeaderItem) == false) {
+					SelectObject(hDCMem, hOldBitMap);
+					DeleteObject(hBitMapMem);
+					DeleteDC(hDCMem);
+					return(CDRF_DODEFAULT);// Error getting the rect
+				}
+
+				RectText.right = RectHeaderItem.right; // Set the right side
+				TreeList_Internal_DeflateRectEx(&RectText, 2, 1); // Defalate it
+				//memcpy(&pNode->pNodeData[0]->rect, &RectText, sizeof(RECT));
+				if (pNode->pNodeData[0]->type == TEXT) {
+					DrawText(hDCMem, pNode->pNodeData[0]->text->c_str(), static_cast<int>(pNode->pNodeData[0]->text->size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
+				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
+					
+				} else if (pNode->pNodeData[0]->type == HWINDOW) {
+					pNode->pNodeData[0]->pWindow->CMoveWindow(RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
+					pNode->pNodeData[0]->pWindow->Show();
+				}
+
+				iOffSet = ColumnsInfo[0]->Width;
+
+				// Draw thwe other labels (the columns)
+				for (iCol = 1; iCol < ColumnsCount; iCol++) {
+
+					if (pNode->pNodeData[iCol]) {
+						memcpy(&RectText, &RectLabel, sizeof(RECT));
+						RectText.left = iOffSet;
+						RectText.right = iOffSet + ColumnsInfo[iCol]->Width;
+
+						// Set cell bk color
+						if ((SelectedLine == false) && (pNode->pNodeData[iCol]->Colored == true)) {
+							memcpy(&RectLabel, &RectText, sizeof(RECT));
+							if (brTextBk)
+								DeleteObject(brTextBk);
+							brTextBk = CreateSolidBrush(pNode->pNodeData[iCol]->BackgroundColor);
+							RectLabel.top += 1;
+							RectLabel.bottom -= 1;
+							RectLabel.right -= 2;
+							FillRect(hDCMem, &RectLabel, brTextBk);
+
+						}
+
+
+						TreeList_Internal_DeflateRect(&RectText, TREELIST_FONT_TEXT_CELL_OFFSET, 1, 2, 1); // This is an "MFC" remake thing :)
+
+						if (pNode->pNodeData[iCol]) {
+
+							// Set specific text color (only when this is not the selected line)
+							if (SelectedLine == false) {
+								if (pNode->pNodeData[iCol]->Colored == true)
+									SetTextColor(hDCMem, pNode->pNodeData[iCol]->TextColor);
+
+								// Set special color for altered cells (if set by ty the caller)
+								if (pNode->pNodeData[iCol]->Altered == true)
+									SetTextColor(hDCMem, pNode->pNodeData[iCol]->AltertedTextColor);
+
+							}
+							//memcpy(&pNode->pNodeData[iCol]->rect, &RectText, sizeof(RECT));
+							if (pNode->pNodeData[iCol]->type == TEXT) {
+								DrawText(hDCMem, pNode->pNodeData[iCol]->text->c_str(), static_cast<int>(pNode->pNodeData[iCol]->text->size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
+							} else if (pNode->pNodeData[iCol]->type == IMAGELIST) {
+
+							} else if (pNode->pNodeData[iCol]->type == HWINDOW) {
+								pNode->pNodeData[iCol]->pWindow->CMoveWindow(RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
+								pNode->pNodeData[iCol]->pWindow->Show();
+							}
+
+						}
+						iOffSet += ColumnsInfo[iCol]->Width;
+					}
+				}
+
+				SetTextColor(hDCMem, RGB(0, 0, 0));
+
+
+				BitBlt(hDC, 0, 0, rect.right, rect.bottom, hDCMem, 0, 0, SRCCOPY);
+				SelectObject(hDCMem, hOldBitMap);
+				DeleteObject(hBitMapMem);
+				DeleteDC(hDCMem);
+				*/
+
 
 				// Draw the rect (on the parent) around the tree
 				if ((CreateFlags & TREELIST_DRAW_EDGE) == TREELIST_DRAW_EDGE)
@@ -1424,8 +1605,8 @@ CTreeListView::CTreeListView(HINSTANCE Instance, HWND Hwnd, RECT *pRect, DWORD d
 
 
 		// Create the list View and the header
-		HwndTreeView = CreateWindowEx(0, WC_TREEVIEW, 0, WS_CHILD | WS_VISIBLE | TVS_FULLROWSELECT | TVS_NOHSCROLL | TVS_NOTOOLTIPS | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT, 0, 0, 0, 0, HwndParent, 0, InstanceParent, 0);
-
+		HwndTreeView = CreateWindowEx(0, WC_TREEVIEW, 0, WS_CHILD | WS_VISIBLE | TVS_FULLROWSELECT | TVS_NOHSCROLL | TVS_NOTOOLTIPS | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EX_DOUBLEBUFFER | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, 0, 0, HwndParent, 0, InstanceParent, 0);
+		//WS_CLIPCHILDREN is for progress bar not flickering during update the other numbers
 		if (!HwndTreeView) {
 			Error = true;
 			break;

@@ -397,7 +397,7 @@ bool httpclient::downloadBINfile(const tstring &link, string& file, const tstrin
 	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetRange(0, 100);
 	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetStep(1);
 	*speed = TEXT("downloading speed estimating...");
-	pTree->Invalidate(nullptr, true);
+	pTree->Invalidate(nullptr, false);
 	do {
 		result = InternetReadFile(/*hURL*/hHttpRequest, Buffer, 1024, &BufferLen);
 		if (!result) {
@@ -410,19 +410,24 @@ bool httpclient::downloadBINfile(const tstring &link, string& file, const tstrin
 			percentage = static_cast<int>(static_cast<int>(file.size()) / static_cast<double>(resource_size) * 100);
 			speedo.FeedNewSize(BufferLen);
 			if (percentage > prevpercentage || speedo.NeedUpdate(*speed)) {
-				pTree->Invalidate(&pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[4]->rect, true);
-				prevpercentage = percentage;
+				//pTree->Invalidate(&pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[4]->rect, true);
+				if (percentage > prevpercentage) {
+					pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->StepIt();
+					prevpercentage = percentage;
+				}
 				output || endl;
 				output << TEXT("Downloading progress: ") << prevpercentage << TEXT("%    ") << *speed;
 				*percentageSTR = to_tstring(percentage) + TEXT("%");
-				pTree->Invalidate(&pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[3]->rect, true);
-				pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->StepIt();
+				//pTree->Invalidate(&pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[3]->rect, true);
+				
+				pTree->Invalidate(nullptr, false);
 			}
 		}
 	} while (result && BufferLen != 0);
 	if (result) {
 		tcout << endl << TEXT("InternetReadFile finished!") << endl;
 		output << endl << TEXT("InternetReadFile finished!") << endl;
+		
 		return true;
 	}
 	return false;
