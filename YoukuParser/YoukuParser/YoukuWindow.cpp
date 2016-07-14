@@ -109,7 +109,8 @@ void YoukuWindow::OnCreate(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	pEdit = new InputAddress(TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_EDIT), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
 	pPath = new CEditCtrl(TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT | ES_AUTOHSCROLL, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_PATH), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
 	
-	hEditDS = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT | GMEM_SHARE, 256L);
+	//hEditDS = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT | GMEM_SHARE, 256L);
+	hEditDS = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, 256L);
 	pConsole = new CEditCtrl(TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL| ES_LEFT | ES_MULTILINE | ES_AUTOHSCROLL | ES_AUTOVSCROLL, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_CONSOLE), reinterpret_cast<HINSTANCE>(hEditDS));
 	SendMessage(GetDlgItem(hwnd, ID_CONSOLE), EM_LIMITTEXT, 0, 0L);
 	//pConsole = new CEditCtrl(TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOHSCROLL | ES_AUTOVSCROLL, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_CONSOLE), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
