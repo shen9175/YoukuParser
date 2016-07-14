@@ -157,10 +157,12 @@ public:
 	void Invalidate() { InvalidateRect(HwndTreeView, nullptr, true); }
 	void CMoveWindow(int x, int y, int width, int height) { RectRequested.left = x, RectRequested.right = x + width; RectRequested.top = y; RectRequested.bottom = y + height;TreeList_Internal_RepositionControls(); }
 	HWND GetWndHandle() { return HwndTreeView; }
+	bool bShow();
 	static LRESULT CALLBACK Static_TreeList_Internal_HandleEditBoxMessages(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK Static_TreeList_Internal_HandleTreeMessagesEx(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK Static_TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 	unordered_map<tstring, TreeListNode*>* GetAllRootNode() { return &AllRootNodes; }
+	void ExpandNode(TreeListNode* n);
 private:
 	TreeListNode* TreeList_Internal_AddNode(TreeListNode *pParent, const tstring& name);
 	TreeListNode* TreeList_Internal_NodeCreateNew();

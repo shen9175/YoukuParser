@@ -401,7 +401,7 @@ void CTreeListView::TreeList_Internal_AutoSetLastColumn() {
 	if (ColumnsCount == -1)
 		return;
 
-	if (Header_GetItem(HwndHeader, ColumnsCount - 1, &HeaderItem) == TRUE) {
+	if (Header_GetItem(HwndHeader, ColumnsCount - 1, &HeaderItem)) {
 		Width = HeaderItem.cxy;
 		StartPosition = ColumnsTotalWidth - Width;
 		NewWidth = (RectHeader.right - RectHeader.left) - StartPosition + 2;
@@ -446,7 +446,7 @@ void CTreeListView::TreeList_Internal_UpdateColumns() {
 
 	// Get column widths from the header control
 	for (iCol = 0; iCol < ColumnsCount; iCol++) {
-		if (Header_GetItem(HwndHeader, iCol, &HeaderItem) == TRUE) {
+		if (Header_GetItem(HwndHeader, iCol, &HeaderItem)) {
 			ColumnsInfo[iCol]->Width = HeaderItem.cxy;
 			ColumnsTotalWidth += HeaderItem.cxy;
 
@@ -459,9 +459,9 @@ void CTreeListView::TreeList_Internal_UpdateColumns() {
 	if (HwndEditBox) {
 
 		// Get the relevant sizes
-		if (Header_GetItemRect(HwndHeader, EditedColumn, &RectHeaderItem) == FALSE)
+		if (!Header_GetItemRect(HwndHeader, EditedColumn, &RectHeaderItem))
 			return;
-		if (TreeView_GetItemRect(HwndTreeView, EditedTreeItem, &RectText, TRUE) == FALSE)
+		if (!TreeView_GetItemRect(HwndTreeView, EditedTreeItem, &RectText, true))
 			return;
 
 		SizeEdit.Width = RectHeaderItem.right - RectHeaderItem.left;
@@ -1091,13 +1091,13 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 
 				// Draw the vertical lines
 				DrawEdge(hDC, &RectItem, BDR_SUNKENINNER, BF_BOTTOM);
-
+/*?? what this label is??
 				// Draw Label, calculate the rect first
 				//memcpy(&pNode->pNodeData[0]->rect, &RectText, sizeof(RECT));
 				if (pNode->pNodeData[0]->type == TEXT) {
 					DrawText(hDC, pNode->pNodeData[0]->text->c_str(), static_cast<int>(pNode->pNodeData[0]->text->size()), &RectText, DT_NOPREFIX | DT_CALCRECT);
 				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
-					bool ret = pNode->pNodeData[0]->pimagelist->DrawImage(hDC, RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, RGB(255, 255, 255), RGB(0, 0, 0), ILD_BLEND);
+					//bool ret = pNode->pNodeData[0]->pimagelist->DrawImage(hDC, RectText.left - 5, RectText.top, RectText.bottom - RectText.top, RectText.bottom - RectText.top, CLR_DEFAULT, CLR_DEFAULT, ILD_BLEND);
 				//	if (!ret) {
 				//		DWORD errorcode = GetLastError();
 				//		MessageBox(nullptr, TEXT("ImageList draw wrong!"), to_tstring(errorcode).c_str(), MB_OK);
@@ -1107,7 +1107,7 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 					pNode->pNodeData[0]->pWindow->Show();
 					SetWindowPos(HwndTreeView, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 				}
-
+*/
 				RectLabel.right = TREELIST_MIN((RectLabel.left + RectText.right + 4), ColumnsInfo[0]->Width - 4);
 
 				if ((RectLabel.right - RectLabel.left) < 0)
@@ -1138,11 +1138,20 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 				if (pNode->pNodeData[0]->type == TEXT) {
 					DrawText(hDC, pNode->pNodeData[0]->text->c_str(), static_cast<int>(pNode->pNodeData[0]->text->size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
 				} else if (pNode->pNodeData[0]->type == IMAGELIST) {
-					bool ret = pNode->pNodeData[0]->pimagelist->DrawImage(hDC, RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, RGB(255, 255, 255), RGB(0, 0, 0), ILD_BLEND);
+					int width, height;
+					pNode->pNodeData[0]->pimagelist->GetImageSize(width, height);
+					HDC hDCMem = CreateCompatibleDC(hDC);
+					HBITMAP hBitMapMem = CreateCompatibleBitmap(hDC, width, height);
+					HBITMAP hOldBitMap = reinterpret_cast<HBITMAP>(SelectObject(hDCMem, hBitMapMem));
+					bool ret = pNode->pNodeData[0]->pimagelist->DrawImage(hDCMem, 0, 0, width, height, CLR_NONE, RGB(255, 255, 255), ILD_BLEND);
+					StretchBlt(hDC, RectText.left - 5, RectText.top, RectText.bottom - RectText.top, RectText.bottom - RectText.top, hDCMem, 0, 0, width, height, SRCCOPY);
+					SelectObject(hDCMem, hOldBitMap);
+					DeleteObject(hBitMapMem);
+					DeleteDC(hDCMem);
 				} else if (pNode->pNodeData[0]->type == HWINDOW) {
 					pNode->pNodeData[0]->pWindow->CMoveWindow(RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
 					pNode->pNodeData[0]->pWindow->Show();
-					SetWindowPos(HwndTreeView, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+					//SetWindowPos(HwndTreeView, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 				}
 
 				iOffSet = ColumnsInfo[0]->Width;
@@ -1187,11 +1196,21 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 							if (pNode->pNodeData[iCol]->type == TEXT) {
 								DrawText(hDC, pNode->pNodeData[iCol]->text->c_str(), static_cast<int>(pNode->pNodeData[iCol]->text->size()), &RectText, DT_NOPREFIX | DT_END_ELLIPSIS);
 							} else if (pNode->pNodeData[iCol]->type == IMAGELIST) {
-								bool ret = pNode->pNodeData[iCol]->pimagelist->DrawImage(hDC, RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, RGB(255, 255, 255), RGB(0, 0, 0), ILD_BLEND);
+								//bool ret = pNode->pNodeData[iCol]->pimagelist->DrawImage(hDC, RectText.left - 5, RectText.top, RectText.bottom - RectText.top, RectText.bottom - RectText.top, CLR_DEFAULT, CLR_DEFAULT, ILD_BLEND);
+								int width, height;
+								pNode->pNodeData[iCol]->pimagelist->GetImageSize(width, height);
+								HDC hDCMem = CreateCompatibleDC(hDC);
+								HBITMAP hBitMapMem = CreateCompatibleBitmap(hDC, width, height);
+								HBITMAP hOldBitMap = reinterpret_cast<HBITMAP>(SelectObject(hDCMem, hBitMapMem));
+								bool ret = pNode->pNodeData[iCol]->pimagelist->DrawImage(hDCMem, 0, 0, width, height, CLR_NONE, RGB(255,255,255), ILD_BLEND);
+								StretchBlt(hDC, RectText.left - 5, RectText.top, RectText.bottom - RectText.top, RectText.bottom - RectText.top, hDCMem, 0, 0, width, height, SRCCOPY);
+								SelectObject(hDCMem, hOldBitMap);
+								DeleteObject(hBitMapMem);
+								DeleteDC(hDCMem);
 							} else if (pNode->pNodeData[iCol]->type == HWINDOW) {
 								pNode->pNodeData[iCol]->pWindow->CMoveWindow(RectText.left - 5, RectText.top, RectText.right - RectText.left, RectText.bottom - RectText.top, true);
 								pNode->pNodeData[iCol]->pWindow->Show();
-								SetWindowPos(HwndTreeView, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+								//SetWindowPos(HwndTreeView, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 							}
 
 						}
@@ -1831,7 +1850,7 @@ TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, const vector<voi
 			TreeItem.iImage = pNewNode->pNodeData[0]->pimagelist->GetCurrentImage();
 		} else if (pNewNode->pNodeData[0]->type == TEXT) {
 			TreeItem.mask = TVIF_TEXT | TVIF_PARAM;
-			TreeItem.pszText = const_cast<LPTSTR>((pNewNode->pNodeData[0]->text->c_str()));
+			TreeItem.pszText = &(*pNewNode->pNodeData[0]->text)[0];//const_cast<LPTSTR>((pNewNode->pNodeData[0]->text->c_str()));
 			TreeItem.cchTextMax = static_cast<int>(pNewNode->pNodeData[0]->text->size());
 		} else if (pNewNode->pNodeData[0]->type == HWINDOW) {
 			TreeItem.mask = TVIF_TEXT | TVIF_PARAM;
@@ -1859,8 +1878,21 @@ TreeListNode* CTreeListView::AddNode(TreeListNode* pParentNode, const vector<voi
 
 	return pNewNode;
 }
-
-
+void CTreeListView::ExpandNode(TreeListNode* root) {
+	if (root) {
+		if (!TreeView_Expand(HwndTreeView, root->TreeItemHandle, TVE_EXPAND)) {
+			tstring message = TEXT("Expand Tree Node Failed");
+			MessageBox(0, message.c_str(), 0, 0);
+		}
+	}
+}
+bool CTreeListView::bShow() {
+	if (IsWindowVisible(HwndTreeView)) {
+		return true;
+	} else {
+		return false;
+	}
+}
 
 /*
 ///////////////////////////////////////////////////////////////////////////////////////

@@ -96,13 +96,14 @@ private:
 	mutex mtx;
 	WNDPROC oldeditproc;
 };
+/*
 class DownloadInfo {
 	DownloadInfo();
 	~DownloadInfo();
 private:
 	vector<vector<TreeListNodeData*>> download_info;
 };
-
+*/
 class InputPWD : public CDialogBox {
 public:
 	InputPWD(tstring& pwd, YoukuWindow* p) : password(pwd), pYoukuWindow(p) {}

@@ -175,7 +175,7 @@ private:
 
 class CImageList {
 public:
-	CImageList(const int& cx,const int& cy, const UINT& flags, const int&  cInitial, const int&  cGrow);
+	CImageList(HINSTANCE h, const int& cx,const int& cy, const UINT& flags, const int&  cInitial, const int&  cGrow);
 	~CImageList();
 	int Add(_In_ HBITMAP  hbmImage, _In_opt_ HBITMAP    hbmMask);
 	int AddFromFile(const tstring&  hbmImage, const tstring& hbmMask);
@@ -184,8 +184,10 @@ public:
 	int GetCurrentImage() { return current; }
 	HIMAGELIST GetHandle() { return handle; }
 	bool DrawImage(HDC hdc, int x, int y, int width, int height, COLORREF rgbBk, COLORREF rgbFg, UINT style);
+	bool GetImageSize(int& width, int& height);
 private:
 	HIMAGELIST handle;
+	HINSTANCE hinstance;
 	int current;
 };
 

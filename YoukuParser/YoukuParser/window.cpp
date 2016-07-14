@@ -404,7 +404,7 @@ bool CDialogBox::DialogProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) 
 	return false;
 }
 
-CImageList::CImageList(const int& cx, const int& cy, const UINT& flags, const int&  cInitial, const int&  cGrow) : current(0) {
+CImageList::CImageList(HINSTANCE h, const int& cx, const int& cy, const UINT& flags, const int&  cInitial, const int&  cGrow) : current(0), hinstance(h) {
 	if (!(handle = ImageList_Create(cx, cy, flags, cInitial, cGrow))) {
 		tstring message = TEXT("ImageList creation Failed!");
 		MessageBox(0, message.c_str(), 0, 0);
@@ -415,9 +415,9 @@ int CImageList::Add(HBITMAP  hbmImage,  HBITMAP    hbmMask) {
 }
 int CImageList::AddFromFile(const tstring&  hbmImage, const tstring& hbmMask = TEXT("")) {
 	int ret;
-	HBITMAP image = LoadBitmap(nullptr, hbmImage.c_str());
+	HBITMAP image = LoadBitmap(hinstance, hbmImage.c_str());
 	if (!hbmMask.empty()) {
-		HBITMAP mask = LoadBitmap(nullptr, hbmMask.c_str());
+		HBITMAP mask = LoadBitmap(hinstance, hbmMask.c_str());
 		ret = ImageList_Add(handle, image, mask);
 		DeleteObject(mask);
 	} else {
@@ -428,19 +428,56 @@ int CImageList::AddFromFile(const tstring&  hbmImage, const tstring& hbmMask = T
 }
 int CImageList::AddFromResourceID(DWORD  hbmImageID, DWORD hbmMask) {
 	int ret;
-	HBITMAP image = LoadBitmap(nullptr, MAKEINTRESOURCE(hbmImageID));
-	if (!hbmMask) {
-		HBITMAP mask = LoadBitmap(nullptr,MAKEINTRESOURCE(hbmMask));
+	HBITMAP image = LoadBitmap(hinstance, MAKEINTRESOURCE(hbmImageID));
+	if (!image) {
+		tstring message = TEXT("Load Bitmap by ID ") + to_tstring(hbmImageID) + TEXT(" Failed");
+		MessageBox(0, message.c_str(), 0, 0);
+		return -1;
+	}
+	if (hbmMask) {
+		HBITMAP mask = LoadBitmap(hinstance,MAKEINTRESOURCE(hbmMask));
+		if (!mask) {
+			tstring message = TEXT("Load Bitmap Mask by ID ") + to_tstring(hbmImageID) + TEXT(" Failed");
+			MessageBox(0, message.c_str(), 0, 0);
+			return -1;
+		}
 		ret = ImageList_Add(handle, image, mask);
+		if (ret == -1) {
+			tstring message = TEXT("ImageList Add Image + Mask Failed");
+			MessageBox(0, message.c_str(), 0, 0);
+			DeleteObject(mask);
+			DeleteObject(image);
+			return ret;
+		}
 		DeleteObject(mask);
 	} else {
 		ret = ImageList_Add(handle, image, nullptr);
+		if (ret == -1) {
+			tstring message = TEXT("ImageList Add Image only Failed");
+			MessageBox(0, message.c_str(), 0, 0);
+			DeleteObject(image);
+			return ret;
+		}
 	}
 	DeleteObject(image);
 	return ret;
 }
 bool CImageList::DrawImage(HDC hdc, int x, int y, int width, int height, COLORREF rgbBk, COLORREF rgbFg, UINT style) {
-	return ImageList_DrawEx(handle, current, hdc, x, y, width, height, rgbBk, rgbFg,style);
+	if (ImageList_DrawEx(handle, current, hdc, x, y, width, height, rgbBk, rgbFg, style)) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+bool CImageList::GetImageSize(int& width, int& height) {
+	if (ImageList_GetIconSize(handle, &width, &height)) {
+		return true;
+	} else {
+		tstring message = TEXT("Get Image size Failed");
+		MessageBox(0, message.c_str(), 0, 0);
+		return false;
+	}
 }
 CImageList::~CImageList() {
 	if (!ImageList_Destroy(handle)) {

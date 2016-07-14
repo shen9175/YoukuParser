@@ -112,6 +112,7 @@ void YoukuWindow::OnCreate(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	hEditDS = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT | GMEM_SHARE, 256L);
 	pConsole = new CEditCtrl(TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL| ES_LEFT | ES_MULTILINE | ES_AUTOHSCROLL | ES_AUTOVSCROLL, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_CONSOLE), reinterpret_cast<HINSTANCE>(hEditDS));
 	SendMessage(GetDlgItem(hwnd, ID_CONSOLE), EM_LIMITTEXT, 0, 0L);
+	//pConsole = new CEditCtrl(TEXT(""), WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | ES_LEFT | ES_MULTILINE | ES_AUTOHSCROLL | ES_AUTOVSCROLL, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_CONSOLE), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
 
 	pButton = new GoButton(URL, TEXT("Go"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_BUTTON_GO), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
 	pClear = new ClearButton(URL, TEXT("Clear"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 0, 0, 0, 0, hwnd, reinterpret_cast<HMENU>(ID_BUTTON_CLEAR), reinterpret_cast<LPCREATESTRUCT>(lParam)->hInstance);
@@ -167,7 +168,12 @@ void YoukuWindow::OnSize(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {
 	ptitle->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 16 - static_cast<int>(1.5 * cyChar), 45 * cxChar, static_cast<int>(1.5 * cyChar), true);
 	presult->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 16 + 2 * cyChar, 3 * cxClient / 4, static_cast<int>(1.5 * cyChar), true);
 	pchecklist->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 16 + 4 * cyChar, 3 * cxClient / 4 + 13 * cxChar, 2 * cyClient / 3, true);
-	pConsole->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 16 + 4 * cyChar, 3 * cxClient / 4 + 13 * cxChar, 2 * cyClient / 3, true);
+	if (pTreeListView->bShow()) {
+		pConsole->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 2, 3 * cxClient / 4 + 13 * cxChar, 1 * cyClient / 3, true);
+	} else {
+		pConsole->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 16 + 4 * cyChar, 3 * cxClient / 4 + 13 * cxChar, 2 * cyClient / 3, true);
+	}
+	pTreeListView->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 16 + 4 * cyChar, 3 * cxClient / 4 + 13 * cxChar, 1 * cyClient / 3);
 	pSelectAll->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2, cyClient / 16 + 4 * cyChar + 2 * cyClient / 3 + 2 * cyChar, 10 * cxChar, static_cast<int>(1.5 * cyChar), true);
 	pInvSelect->CMoveWindow((cxClient / 4 - 12 * cxChar) / 2 + 12 * cxChar, cyClient / 16 + 4 * cyChar + 2 * cyClient / 3 + 2 * cyChar, 14 * cxChar, static_cast<int>(1.5 * cyChar), true);
 	pSelectFolder->CMoveWindow(7 * cxClient / 8 - 7 * cxChar, cyClient / 16 + 4 * cyChar + 2 * cyClient / 3 + 2 * cyChar, 3 * cxChar, static_cast<int>(1.5 * cyChar),true);
@@ -416,7 +422,7 @@ void YoukuWindow::OnOKButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM 
 			continue;
 		}
 		CImageList* pStatus;
-		pStatus = new CImageList(48, 48, 0, 5, 5);
+		pStatus = new CImageList(reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)), 48, 48, 0, 5, 5);
 		pStatus->AddFromResourceID(IDB_STOP);
 		pStatus->AddFromResourceID(IDB_PLAY);
 		pStatus->AddFromResourceID(IDB_WAIT);
@@ -458,7 +464,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 
 	if ((*pTreeListView->GetAllRootNode()).find(videoURL) != (*pTreeListView->GetAllRootNode()).cend()) {
 		TreeListNode* root = (*pTreeListView->GetAllRootNode()).at(videoURL);
-		root->pNodeData[0]->pimagelist->SetCurrentImage(2);//set the status icon to play
+		root->pNodeData[0]->pimagelist->SetCurrentImage(1);//set the status icon to play
 	} else {
 		*pconsole << TEXT("The current video URL: ") << videoURL << TEXT(" does not have a tree node in the treelistview!") << endl;
 	}
@@ -642,7 +648,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 				}
 				
 				CImageList* pStatus;
-				pStatus = new CImageList(48, 48, 0, 5, 5);
+				pStatus = new CImageList(reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)), 48, 48, 0, 5, 5);
 				pStatus->AddFromResourceID(IDB_STOP);
 				pStatus->AddFromResourceID(IDB_PLAY);
 				pStatus->AddFromResourceID(IDB_WAIT);
@@ -676,6 +682,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 			}
 
 		}
+		pTreeListView->ExpandNode((*pTreeListView->GetAllRootNode()).at(videoURL));
 		tstring originalpath = DownloadPath;
 		if (originalpath.back() == TEXT('\0')) {
 			originalpath.pop_back();
@@ -739,6 +746,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 
 		}
 	}
+	pTreeListView->Invalidate(nullptr, false);
 	mtx.unlock();
 }
 
@@ -895,7 +903,7 @@ bool CheckList::Update(const int& i) {
 	}
 }
 
-
+/*
 DownloadInfo::DownloadInfo() {
 	
 }
@@ -910,3 +918,4 @@ DownloadInfo::~DownloadInfo() {
 		}
 	}
 }
+*/
