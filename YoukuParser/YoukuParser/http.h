@@ -15,19 +15,19 @@ class httpclient {
 		tstring GetCookie(const tstring& url);
 		tstring GetSetCookie(const tstring& url);// { return setcookie; };
 		tstring GetHtmlSetCookie() { return setcookie; }
-		void SetTreeListView(CTreeListView* p) { TreeListViewoutput = p; }
-		void SetTreeRowInfo(TreeListNodeData* p) { row_info = p; }
+		//void SetTreeListView(CTreeListView* p) { TreeListViewoutput = p; }
+		//void SetTreeRowInfo(TreeListNodeData* p) { row_info = p; }
 	private:
 		bool downloadTXTfile(tstring& file);
 		bool downloadBINfile(const tstring &url, string& file,  const tstring& videoURL, CTreeListView* pTree);
 		HINTERNET hIntSession, hHttpSession, hHttpRequest, hURL;
-		CTreeListView* TreeListViewoutput;
-		TreeListNodeData* row_info;
+		//CTreeListView* TreeListViewoutput;
+		//TreeListNodeData* row_info;
 		tstring cookie;
 		tstring setcookie;
 		DWORD resource_size;
 		ConsoleStream& output;
-		Speedometer speedo;
+		//Speedometer speedo;
 		unordered_map<int, tstring> internet_scheme{
 			{ -2, TEXT("INTERNET_SCHEME_PARTIAL") },
 			{ -1, TEXT("INTERNET_SCHEME_UNKNOWN") },

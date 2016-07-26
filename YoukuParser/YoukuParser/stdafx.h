@@ -49,6 +49,11 @@
 #include <memory>
 #include <initializer_list>
 
+/*
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+*/
 
 template<class Interface>
 inline void SafeRelease(
@@ -112,6 +117,7 @@ struct VideoList {
 };
 struct DownloadFactors {
 	tstring filename; //final readable video filename;->same with VideoList->name
+	size_t size;
 	vector<tstring> order;//list of partial video file names->has the order
 	unordered_map<tstring, vector<tstring>> links; //key is the real unreadable partial file name, values are multiple possible download links->one same file can be saved on different servers
 };
@@ -133,14 +139,14 @@ struct DownloadFactors {
 #include "json11.hpp"
 #include "utilities.h"
 #include "flv_joiner.h"
+#include "timer.h"
+#include "speedometer.h"
 #include "window.h"
 #include "TreeListView.h"
 using namespace json11;
 
 #include "consolestream.h"
 #include "ErrorHandle.h"
-#include "timer.h"
-#include "speedometer.h"
 #include "http.h"
 #include "parser.h"
 #include "YoukuWindow.h"

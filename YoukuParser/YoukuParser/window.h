@@ -194,12 +194,24 @@ private:
 class CProgressBar : public CControl {
 public:
 	CProgressBar(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi);
+	~CProgressBar();
 	virtual void OnNotification(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam) {}
 	DWORD SetRange(unsigned __int64 low, __int64 high);
 	unsigned __int64 SetStep(unsigned __int64 step);
 	unsigned __int64 SetPos(unsigned __int64 pos);
 	unsigned __int64 StepIt();
+	void SetTotalAmount(__int64 n) { Total = n; }
+	void AddAmount(__int64 n);
+	bool GetUpdate() { return update; }
+	int GetPercentage() { return prePercentage; }
+	Speedometer* GetSpeedOmeter() { return speedo; }
 private:
 	//__int64 high;
 	//__int64 low;
+	__int64 Total;
+	__int64 current;
+	int prePercentage;
+	bool update;
+	Speedometer* speedo;
+	//int counter;
 };

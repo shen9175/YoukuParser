@@ -486,17 +486,23 @@ CImageList::~CImageList() {
 	}
 }
 
-CProgressBar::CProgressBar(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi) : CControl(caption, dwWndStyle, x, y, width, height, parent, hmenu, hi) {
+CProgressBar::CProgressBar(const tstring& caption, const DWORD& dwWndStyle, const int& x, const int& y, const int& width, const int& height, const HWND& parent, const HMENU& hmenu, const HINSTANCE& hi) : Total(0), current(0), prePercentage(0), update(false), CControl(caption, dwWndStyle, x, y, width, height, parent, hmenu, hi) {
 	SetAppName(PROGRESS_CLASS);
 	INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
 	icex.dwICC = ICC_PROGRESS_CLASS;
 	InitCommonControlsEx(&icex);
-
+	//counter = 0;
 	DWORD errorcode;
 	hwnd = CreateWindow(szAppName.c_str(), szCaption.c_str(), dwWndStyle, xPos, yPos, width, height, hWndParent, hMenu, hInstance, 0);
 	errorcode = GetLastError();
 	if (hwnd == nullptr) {
 		MessageBox(0, TEXT("Create Progress Bar Control Failed"), 0, 0);
+	}
+	speedo = new Speedometer;
+}
+CProgressBar::~CProgressBar() {
+	if (speedo) {
+		delete speedo;
 	}
 }
 
@@ -511,4 +517,18 @@ unsigned __int64 CProgressBar::StepIt() {
 }
 unsigned __int64 CProgressBar::SetPos(unsigned __int64 pos) {
 	return SendMessage(hwnd, PBM_SETPOS, pos, 0);
+}
+void CProgressBar::AddAmount(__int64 n) {
+	current += n;
+	speedo->FeedNewSize(n);
+	int percentage = static_cast<int>(current / static_cast<double>(Total) * 100);
+	if (percentage > prePercentage) {
+		StepIt();
+		//++counter;
+		//*out << reinterpret_cast<int>(this) << TEXT(" Update percentage: ") << counter << endl;
+		prePercentage = percentage;
+		update = true;
+	} else {
+		update = false;
+	}
 }

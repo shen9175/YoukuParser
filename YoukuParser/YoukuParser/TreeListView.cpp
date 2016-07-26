@@ -1056,9 +1056,9 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 
 				SetBkMode(hDC, TRANSPARENT);
 
-				if (TreeView_GetItemRect(HwndTreeView, hTreeItem, &RectLabel, true) == false)
+				if (TreeView_GetItemRect(HwndTreeView, hTreeItem, &RectLabel, true) == false) {
 					return(CDRF_DODEFAULT); // No RECT
-
+				}
 
 				SetTextColor(hDC, RGB(0, 0, 0)); // Make sure we use black color
 				clTextBk = lpNMTVCustomDraw->clrTextBk;
@@ -1071,9 +1071,15 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 				FillRect(hDC, &RectLabel, brWnd);
 
 				ColumnsCount = Header_GetItemCount(HwndHeader);
-				if (ColumnsCount == -1)
+				if (ColumnsCount == -1) {
+					if (brWnd) {
+						DeleteObject(brWnd);
+					}
+					if (brTextBk) {
+						DeleteObject(brTextBk);
+					}
 					return(CDRF_DODEFAULT); // No columns info, nothing to do
-
+				}
 
 											// Draw the horizontal lines
 				for (iCol = 0; iCol < ColumnsCount; iCol++) {
@@ -1128,9 +1134,15 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 				memcpy(&RectText, &RectLabel, sizeof(RECT));
 
 				// The label right shoud be as the column right
-				if (Header_GetItemRect(HwndHeader, 0, &RectHeaderItem) == false)
+				if (Header_GetItemRect(HwndHeader, 0, &RectHeaderItem) == false) {
+					if (brWnd) {
+						DeleteObject(brWnd);
+					}
+					if (brTextBk) {
+						DeleteObject(brTextBk);
+					}
 					return(CDRF_DODEFAULT);// Error getting the rect
-
+				}
 
 				RectText.right = RectHeaderItem.right; // Set the right side
 				TreeList_Internal_DeflateRectEx(&RectText, 2, 1); // Defalate it
@@ -1394,9 +1406,15 @@ LRESULT CTreeListView::TreeList_Internal_HandleTreeMessages(HWND hWnd, UINT Msg,
 
 
 				// Draw the rect (on the parent) around the tree
-				if ((CreateFlags & TREELIST_DRAW_EDGE) == TREELIST_DRAW_EDGE)
+				if ((CreateFlags & TREELIST_DRAW_EDGE) == TREELIST_DRAW_EDGE) {
 					DrawEdge(GetDC(HwndParent), &RectBorder, EDGE_ETCHED, BF_RECT);
-
+				}
+				if (brWnd) {
+					DeleteObject(brWnd);
+				}
+				if (brTextBk) {
+					DeleteObject(brTextBk);
+				}
 				return(CDRF_DODEFAULT);
 			}
 			break;
@@ -1573,7 +1591,6 @@ CTreeListView::CTreeListView(HINSTANCE Instance, HWND Hwnd, RECT *pRect, DWORD d
 	0xCDD70693,0x54DE5729,0x23D967BF,0xB3667A2E,0xC4614AB8,0x5D681B02,0x2A6F2B94,
 	0xB40BBE37,0xC30C8EA1,0x5A05DF1B,0x2D02EF8D} {
 
-	
 	bool                Error = false;
 	bool                PrevInstance = false;
 

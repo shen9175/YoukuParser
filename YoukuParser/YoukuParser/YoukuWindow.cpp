@@ -431,7 +431,9 @@ void YoukuWindow::OnOKButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM 
 		pStatus->AddFromResourceID(IDB_FAIL);
 		pStatus->SetCurrentImage(2);//initial is wait icon
 		CProgressBar* pProgressBar;
-		pProgressBar = new CProgressBar(TEXT(""), WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, pTreeListView->GetWndHandle(), reinterpret_cast<HMENU>(0), reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)));
+		pProgressBar = new CProgressBar(TEXT(""), WS_CHILD | WS_VISIBLE | PBS_SMOOTH, 0, 0, 0, 0, pTreeListView->GetWndHandle(), reinterpret_cast<HMENU>(0), reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)));
+		pProgressBar->SetRange(0, 100);
+		pProgressBar->SetStep(1);
 		//pProgressBar->Show();
 		//AddNode will copy all information to the heap, so here no need to put all information to heap
 		/*
@@ -462,7 +464,7 @@ void YoukuWindow::OnOKButtonClicked(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM 
 
 void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 	mtx.lock();
-
+	map< size_t, RESOLUTION_DATA> resolutions;//use local to clear the resolution data in each downloaded file
 	if ((*pTreeListView->GetAllRootNode()).find(videoURL) != (*pTreeListView->GetAllRootNode()).cend()) {
 		TreeListNode* root = (*pTreeListView->GetAllRootNode()).at(videoURL);
 		root->pNodeData[0]->pimagelist->SetCurrentImage(1);//set the status icon to play
@@ -581,8 +583,9 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 			auto stream_type = stream_array[i]["stream_type"].string_value();
 			auto height = stream_array[i]["height"].number_value();
 			auto width = stream_array[i]["width"].number_value();
+			auto size = stream_array[i]["size"].number_value();
 			if (resolutions.find(static_cast<size_t>(height * width)) == resolutions.cend()) {
-				resolutions[static_cast<size_t>(height * width)] = { stream_type,{ static_cast<size_t>(width), static_cast<size_t>(height)} };
+				resolutions[static_cast<size_t>(height * width)] = { stream_type, static_cast<size_t>(width), static_cast<size_t>(height), static_cast<size_t>(size) };
 			} else {
 				//print out ignore resolution and stream type
 				*pconsole << TEXT("Ignore already exsiting resolution: ") << ByteToWide(CP_UTF8, stream_type) << TEXT(": ") << static_cast<int>(width) << TEXT(" x ") << static_cast<int>(height) << TEXT(" ") << resolution_choice.at(stream_type).second << endl;
@@ -590,10 +593,10 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 		}
 		*pconsole << endl << TEXT("There are following resolutions in this video:") << endl;
 		for (auto item : resolutions) {
-			*pconsole << TEXT("Stream type: ") << ByteToWide(CP_UTF8, item.second.first) << TEXT(": ") << static_cast<int>(item.second.second.first) << TEXT(" x ") << static_cast<int>(item.second.second.second) << TEXT(" ") << resolution_choice.at(item.second.first).second <<endl;
+			*pconsole << TEXT("Stream type: ") << ByteToWide(CP_UTF8, item.second.stream_type) << TEXT(": ") << static_cast<int>(item.second.width) << TEXT(" x ") << static_cast<int>(item.second.height) << TEXT(" ") << resolution_choice.at(item.second.stream_type).second <<endl;
 		}
 		*pconsole << endl << TEXT("The program automatically choose the highest resolution is:") << endl;
-		*pconsole << TEXT("Stream type: ") << ByteToWide(CP_UTF8, (*resolutions.crbegin()).second.first) << TEXT(": ") << static_cast<int>((*resolutions.crbegin()).second.second.first) << TEXT(" x ") << static_cast<int>((*resolutions.crbegin()).second.second.second) << TEXT(" ") << resolution_choice.at((*resolutions.crbegin()).second.first).second << endl;
+		*pconsole << TEXT("Stream type: ") << ByteToWide(CP_UTF8, resolutions.crbegin()->second.stream_type) << TEXT(": ") << static_cast<int>(resolutions.crbegin()->second.width) << TEXT(" x ") << static_cast<int>(resolutions.crbegin()->second.height) << TEXT(" ") << resolution_choice.at(resolutions.crbegin()->second.stream_type).second << TEXT(" Total Size = ") << static_cast<int>(resolutions.crbegin()->second.size) << TEXT(" bytes") << endl;
 		*pconsole << endl << TEXT("Finishing extracting video resolutions from JSON file!") << endl;
 
 		*pconsole << endl << TEXT("Extracting \"encrypt_string\" and \"ip\" from JSON file...") << endl;
@@ -613,7 +616,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 		GetParameters(vid, security_string, sid, token, ep);
 		*pconsole << TEXT("Finishing decrypting and synthething m3u8 address link...") << endl;
 		*pconsole << TEXT("M3U8 file address link is: ") << endl << endl;
-		m3u8 = TEXT("http://pl.youku.com/playlist/m3u8?vid=") + vid + TEXT("&type=") + resolution_choice.at((*resolutions.crbegin()).second.first).first +TEXT("&ts=") + to_tstring(time(nullptr)) + TEXT("&keyframe=1&ep=") + ep + TEXT("&sid=") + sid + TEXT("&token=") + token + TEXT("&ctype=12&ev=1&oip=") + ip + (password.empty() ? TEXT("") : TEXT("&password=") + password);
+		m3u8 = TEXT("http://pl.youku.com/playlist/m3u8?vid=") + vid + TEXT("&type=") + resolution_choice.at(resolutions.crbegin()->second.stream_type).first +TEXT("&ts=") + to_tstring(time(nullptr)) + TEXT("&keyframe=1&ep=") + ep + TEXT("&sid=") + sid + TEXT("&token=") + token + TEXT("&ctype=12&ev=1&oip=") + ip + (password.empty() ? TEXT("") : TEXT("&password=") + password);
 		*pconsole << m3u8 << endl;
 		*pconsole << endl << TEXT("Getting video file true downloading links container: m3u8 file...") << endl;
 		tstring m3u8file;
@@ -627,8 +630,9 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 
 		DownloadFactors videolinks;
 		videolinks.filename = videolist[index].name;
-
-
+		videolinks.size = resolutions.crbegin()->second.size;
+		(pTreeListView->GetAllRootNode())->at(videoURL)->pNodeData[2]->pWindow->SetTotalAmount(videolinks.size);
+		(pTreeListView->GetAllRootNode())->at(videoURL)->pNodeData[2]->pWindow->GetSpeedOmeter()->Reset();
 		M3U8Parser(m3u8file, videolinks);
 		*pconsole << endl << TEXT("Finish parsing m3u8 file!") << endl;
 		if (videolinks.links.empty()) {
@@ -657,7 +661,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 				pStatus->AddFromResourceID(IDB_FAIL);
 				pStatus->SetCurrentImage(2);//initial is wait icon
 				CProgressBar* pProgressBar;
-				pProgressBar = new CProgressBar(TEXT(""), WS_CHILD | WS_VISIBLE, 0, 0, 0, 0, pTreeListView->GetWndHandle(), reinterpret_cast<HMENU>(0), reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)));
+				pProgressBar = new CProgressBar(TEXT(""), WS_CHILD | WS_VISIBLE | PBS_SMOOTH, 0, 0, 0, 0, pTreeListView->GetWndHandle(), reinterpret_cast<HMENU>(0), reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)));
 				pProgressBar->Show();
 				//AddNode will copy all information to the heap, so here no need to put all information to heap
 				/*
@@ -675,7 +679,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 
 				//vector<TreeListNodeData*> cannot pass into function, maybe because TreeListData has no copy constructor, just cast to void and pass and cast back in AddNode function
 				vector<void*> row = { &status, &name, &progress, &percentage, &speed };
-				pTreeListView->AddNode((*pTreeListView->GetAllRootNode()).at(videoURL), row, videolinks.links.at(item).front());
+				pTreeListView->AddNode((pTreeListView->GetAllRootNode())->at(videoURL), row, videolinks.links.at(item).front());
 				pTreeListView->Invalidate(nullptr, false);
 				
 			} else {

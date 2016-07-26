@@ -385,15 +385,17 @@ bool httpclient::downloadBINfile(const tstring &link, string& file, const tstrin
 	BOOL result;
 	tcout << TEXT("InternetReadFile...") << endl;
 	output << TEXT("InternetReadFile...") << endl;
-	int percentage = 0;
-	int prevpercentage = 0;
 	output << TEXT("Total downloading size : ") << resource_size << endl;
 	if (resource_size <= 0) {
 		return false;
 	}
-	speedo.Reset();
+	//speedo.Reset();
+	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetTotalAmount(resource_size);
+	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->GetSpeedOmeter()->Reset();
 	tstring* speed = pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[4]->text;
 	tstring* percentageSTR = pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[3]->text;
+	tstring* TotalSpeed = pTree->GetAllRootNode()->at(videoURL)->pNodeData[4]->text;
+	tstring* TotalPercentageSTR = pTree->GetAllRootNode()->at(videoURL)->pNodeData[3]->text;
 	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetRange(0, 100);
 	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetStep(1);
 	*speed = TEXT("downloading speed estimating...");
@@ -407,19 +409,29 @@ bool httpclient::downloadBINfile(const tstring &link, string& file, const tstrin
 			InternetErrorOut(output, errorcode, TEXT("InternetReadFile"));
 		} else {
 			file.append(Buffer, BufferLen);
-			percentage = static_cast<int>(static_cast<int>(file.size()) / static_cast<double>(resource_size) * 100);
-			speedo.FeedNewSize(BufferLen);
-			if (percentage > prevpercentage || speedo.NeedUpdate(*speed)) {
-				//pTree->Invalidate(&pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[4]->rect, true);
-				if (percentage > prevpercentage) {
-					pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->StepIt();
-					prevpercentage = percentage;
-				}
+			/*atomic operation here*/
+			pTree->GetAllRootNode()->at(videoURL)->pNodeData[2]->pWindow->AddAmount(BufferLen);
+			/*atomic operation here*/
+			pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->AddAmount(BufferLen);
+
+			if (pTree->GetAllRootNode()->at(videoURL)->pNodeData[2]->pWindow->GetUpdate()) {
+				//pTree->GetAllRootNode()->at(videoURL)->pNodeData[2]->pWindow->StepIt();
+				*TotalPercentageSTR = to_tstring(pTree->GetAllRootNode()->at(videoURL)->pNodeData[2]->pWindow->GetPercentage()) + TEXT("%");
+				pTree->Invalidate(nullptr, false);
+			}
+			if (pTree->GetAllRootNode()->at(videoURL)->pNodeData[2]->pWindow->GetSpeedOmeter()->NeedUpdate(*TotalSpeed)) {
+				pTree->Invalidate(nullptr, false);
+			}
+			if (pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->GetUpdate()) {
+				//pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->StepIt();
+				*percentageSTR = to_tstring(pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->GetPercentage()) + TEXT("%");
 				output || endl;
-				output << TEXT("Downloading progress: ") << prevpercentage << TEXT("%    ") << *speed;
-				*percentageSTR = to_tstring(percentage) + TEXT("%");
-				//pTree->Invalidate(&pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[3]->rect, true);
-				
+				output << TEXT("Downloading progress: ") << pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->GetPercentage() << TEXT("%    ") << *speed;
+				pTree->Invalidate(nullptr, false);
+			}
+			if(pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->GetSpeedOmeter()->NeedUpdate(*speed)) {
+				output || endl;
+				output << TEXT("Downloading progress: ") << pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->GetPercentage() << TEXT("%    ") << *speed;
 				pTree->Invalidate(nullptr, false);
 			}
 		}

@@ -240,6 +240,7 @@ private:
 	TREELIST_CB                 *pCBValidateEdit;
 	const unsigned long TreeListCRC32Table[256];
 	void*						Parent_GWLP_USERDATA;
+	
 };
 
 
