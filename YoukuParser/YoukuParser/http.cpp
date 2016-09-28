@@ -320,7 +320,7 @@ bool httpclient::EstablishConnection(const tstring& url, const tstring& cookie, 
 				tcout << TEXT("HttpQueryInfoSetCookie failed!") << endl;
 				output << TEXT("HttpQueryInfoSetCookie failed!") << endl;
 				InternetErrorOut(output, errorcode, TEXT("HttpQueryInfoSetCookie"));
-				//goto fail;
+				goto fail;
 			}
 		}
 		//InfoBuffer.push_back(TEXT('\0\0'));
@@ -445,7 +445,7 @@ bool httpclient::downloadBINfile(const tstring &link, string& file, const tstrin
 	return false;
 }
 bool httpclient::GetHtml(const tstring & url, tstring& html) {
-	if (EstablishConnection(url, tstring(), true, nullptr)) {
+	if (EstablishConnection(url, tstring(), false, nullptr)) {
 		bool result = downloadTXTfile(html);
 		//output << GetCookie(url) << endl;
 		InternetCloseHandle(hHttpRequest);
