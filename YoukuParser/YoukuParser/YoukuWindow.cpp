@@ -662,6 +662,8 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 				pStatus->SetCurrentImage(2);//initial is wait icon
 				CProgressBar* pProgressBar;
 				pProgressBar = new CProgressBar(TEXT(""), WS_CHILD | WS_VISIBLE | PBS_SMOOTH, 0, 0, 0, 0, pTreeListView->GetWndHandle(), reinterpret_cast<HMENU>(0), reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)));
+				pProgressBar->SetRange(0, 100);
+				pProgressBar->SetStep(1);
 				pProgressBar->Show();
 				//AddNode will copy all information to the heap, so here no need to put all information to heap
 				/*

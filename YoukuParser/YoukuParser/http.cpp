@@ -320,7 +320,7 @@ bool httpclient::EstablishConnection(const tstring& url, const tstring& cookie, 
 				tcout << TEXT("HttpQueryInfoSetCookie failed!") << endl;
 				output << TEXT("HttpQueryInfoSetCookie failed!") << endl;
 				InternetErrorOut(output, errorcode, TEXT("HttpQueryInfoSetCookie"));
-				//goto fail;
+				goto fail;
 			}
 		}
 		//InfoBuffer.push_back(TEXT('\0\0'));
@@ -396,8 +396,8 @@ bool httpclient::downloadBINfile(const tstring &link, string& file, const tstrin
 	tstring* percentageSTR = pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[3]->text;
 	tstring* TotalSpeed = pTree->GetAllRootNode()->at(videoURL)->pNodeData[4]->text;
 	tstring* TotalPercentageSTR = pTree->GetAllRootNode()->at(videoURL)->pNodeData[3]->text;
-	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetRange(0, 100);
-	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetStep(1);
+	//pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetRange(0, 100);
+	//pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetStep(1);
 	*speed = TEXT("downloading speed estimating...");
 	pTree->Invalidate(nullptr, false);
 	do {
@@ -445,7 +445,7 @@ bool httpclient::downloadBINfile(const tstring &link, string& file, const tstrin
 	return false;
 }
 bool httpclient::GetHtml(const tstring & url, tstring& html) {
-	if (EstablishConnection(url, tstring(), true, nullptr)) {
+	if (EstablishConnection(url, tstring(), false, nullptr)) {
 		bool result = downloadTXTfile(html);
 		//output << GetCookie(url) << endl;
 		InternetCloseHandle(hHttpRequest);
