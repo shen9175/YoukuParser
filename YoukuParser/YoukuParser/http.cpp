@@ -455,8 +455,8 @@ bool httpclient::downloadBINfile(const tstring &link, string& file, const tstrin
 	tstring* percentageSTR = pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[3]->text;
 	tstring* TotalSpeed = pTree->GetAllRootNode()->at(videoURL)->pNodeData[4]->text;
 	tstring* TotalPercentageSTR = pTree->GetAllRootNode()->at(videoURL)->pNodeData[3]->text;
-	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetRange(0, 100);
-	pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetStep(1);
+	//pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetRange(0, 100);
+	//pTree->GetAllRootNode()->at(videoURL)->AllSiblings.at(link)->pNodeData[2]->pWindow->SetStep(1);
 	*speed = TEXT("downloading speed estimating...");
 	pTree->Invalidate(nullptr, false);
 	do {
