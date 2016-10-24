@@ -157,6 +157,10 @@ bool httpclient::EstablishConnection(const tstring& url, const tstring& cookie, 
 		//pHeader = &cookie[0];
 		//dwHeadSize = static_cast<DWORD>(cookie.size());
 	}
+
+	int resend = 20;
+HTTP_ReSend:
+
 	tcout << TEXT("HttpSendRequest ...") << endl;
 	output << TEXT("HttpSendRequest ...") << endl;
 	int retrytime = 20;
@@ -265,6 +269,61 @@ bool httpclient::EstablishConnection(const tstring& url, const tstring& cookie, 
 		output << TEXT("HttpQueryInfo Querying for \"Http Receive Respond Headers\" passed!") << endl;
 
 	}
+
+	{
+	tcout << endl << TEXT("HttpQueryInfo: Querying for \"Http Status Code\" ...") << endl;
+	output << endl << TEXT("HttpQueryInfo: Querying for \"Http Status Code\" ...") << endl;
+
+	DWORD dwInfoBufferLength = sizeof(DWORD);
+	DWORD StatusCode;
+	while (!HttpQueryInfo(hHttpRequest, HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER, &StatusCode, &dwInfoBufferLength, nullptr)) {
+		errorcode = GetLastError();
+		if (errorcode == ERROR_INSUFFICIENT_BUFFER) {
+			tcout << TEXT("Should not be here!") << endl;
+			output << TEXT("Should not be here!") << endl; 
+		} else if (errorcode == ERROR_HTTP_HEADER_NOT_FOUND) {
+			tcout << TEXT("HttpQueryInfo: \"Http Receive Respond Headers\" not found!") << endl;
+			output << TEXT("HttpQueryInfo: \"Http Receive Respond Headers\" not found!") << endl;
+			break;
+		} else {
+			tcout << TEXT("HttpQueryInfo: Querying for \"Http Receive Respond Headers\" failed!") << endl;
+			output << TEXT("HttpQueryInfo: Querying for \"Http Receive Respond Headers\" failed!") << endl;
+			InternetErrorOut(output, errorcode, TEXT("HttpQueryInfo: Querying for \"Http Receive Respond Headers\""));
+			InternetCloseHandle(hHttpRequest);
+			InternetCloseHandle(hHttpSession);
+			InternetCloseHandle(hIntSession);
+			goto fail;
+		}
+	}
+	errorcode = GetLastError();//here is for after ERROR_INSUFFICIENT_BUFFER, the second time HttpQueryInfo will success and errorcode will keep ERROR_INSUFFICIENT_BUFFER, so here re-get new errorcode
+	if (errorcode == ERROR_SUCCESS) {//here is for after ERROR_HTTP_HEADER_NOT_FOUND, it break out of loop, but don't need to print cookie and release allocated memory.
+		tcout << TEXT("\"Http Status Code\" is : ") <<  StatusCode << endl;
+		output << TEXT("\"Http Status Code\" is : ") << StatusCode << endl;
+
+	}
+	tcout << TEXT("HttpQueryInfo Querying for \"Http Status code\" passed!") << endl;
+	output << TEXT("HttpQueryInfo Querying for \"Http Status Code\" passed!") << endl;
+
+	if (StatusCode != 200) {
+		if (resend > 0) {
+			tcout << TEXT("Http Status Code is not 200 OK but is ") << StatusCode << TEXT("retrying...") << resend << TEXT(" times left.") << endl;
+			output << TEXT("Http Status Code is not 200 OK but is ") << StatusCode << TEXT("retrying...") << resend << TEXT(" times left.") << endl;
+			--resend;
+			goto HTTP_ReSend;
+		} else {
+			output << endl;
+			tcout << TEXT("Http Status Code after 20 times retrys, still not 200, failed this job, retry this later.") << endl;
+			output << TEXT("Http Status Code after 20 times retrys, still not 200, failed this job, retry this later.") << endl;
+			goto fail;
+		}
+	}
+
+	tcout << endl;
+	output << endl;
+
+	}
+
+
 	{
 		tcout << TEXT("HttpQueryInfo: Querying for \"Resource size\" ...") << endl;
 		output << TEXT("HttpQueryInfo: Querying for \"Resource size\" ...") << endl;
