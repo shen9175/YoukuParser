@@ -92,14 +92,14 @@ bool M3U8Parser(const tstring& m3u8, DownloadFactors& videolinks) {
 	//															 http://stackoverflow.com/questions/406230/regular-expression-to-match-line-that-doesnt-contain-a-word
 	// regex: AND operator: (?=expr)   (?=.*word1)(?=.*word2)(?=.*word3) http://stackoverflow.com/questions/469913/regular-expressions-is-there-an-and-operator
 	// not contain: 03008001005756AC0E8896000032C87E2BE91A-97F6-1E3B-A634-DDEEE48EB109.flv.ts?ts_start=0.0&ts_end=6.26&ts_seg_no=0&ts_keyframe=1 AND has pattern http://[^\?]+.flv -> http:// + any character not ? + .flv
-	tstring videolink_pattern = TEXT("(http://[^\\?]+\\.flv)\\.ts\\?[^#]+");//non-greedy matching: http://www.regular-expressions.info/repeat.html
+	tstring videolink_pattern = TEXT("(http://[^\\?]+\\.(flv|mp4|3gp))\\.ts\\?[^#]+");//non-greedy matching: http://www.regular-expressions.info/repeat.html
 	tregex videolink(videolink_pattern);
 	tsmatch vlinks;
 	unordered_set<tstring> removedupfilename;
 	unordered_set<tstring> removeduplink;
 	for (tregex_iterator it(m3u8.cbegin(), m3u8.cend(), videolink), end_it; it != end_it; ++it) {
 		tstring truevideolink = it->str(1);
-		tstring filename_pattern = TEXT("[^/^\\.]+\\.flv");
+		tstring filename_pattern = TEXT("[^/^\\.]+\\.(flv|mp4|3gp)");
 		tregex filenamefilter(filename_pattern);
 		tsmatch filename;
 		if (regex_search(truevideolink, filename, filenamefilter)) {

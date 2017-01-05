@@ -519,23 +519,26 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 		if (!data["error"].is_null()) {
 			if (static_cast<int>(data["error"]["code"].number_value()) == -202) {
 				bool wrongpwd = true;
+				bool popup_diag_psw = false;//fisrt time try last saved password to continue downloading a series videos with same password without inputing password every video
 				while (wrongpwd) {
-					InputPWD pwd(password, this);
-					if (pwd.DoModal(reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)), MAKEINTRESOURCE(IDD_PWD_INPUT_DIALOG), hwnd) == ID_PWD_INPUT_OK) {
-						*pconsole << TEXT("Input password is ") << password << endl;;
-					} else {
-						*pconsole << TEXT("No password, the video will be skipped!") << endl;
-						mtx.unlock();
-						return;
+					if (popup_diag_psw) {
+						InputPWD pwd(password, this);
+						if (pwd.DoModal(reinterpret_cast<HINSTANCE>(GetWindowLongPtr(hwnd, GWLP_HINSTANCE)), MAKEINTRESOURCE(IDD_PWD_INPUT_DIALOG), hwnd) == ID_PWD_INPUT_OK) {
+							*pconsole << TEXT("Input password is ") << password << endl;;
+						} else {
+							*pconsole << TEXT("No password, the video will be skipped!") << endl;
+							mtx.unlock();
+							return;
+						}
 					}
-					JSONurl += TEXT("&pwd=") + password;
+					tstring newJSONurl = JSONurl + TEXT("&pwd=") + password;
 					*pconsole << endl << TEXT("New JSON URL with password is:") << endl;
-					*pconsole << JSONurl << endl;
+					*pconsole << newJSONurl << endl;
 					*pconsole << endl << TEXT("Downloading JSON again file with password...") << endl;
 					tries = 20;
 					JSON.clear();
 					while (tries > 0) {
-						if (hc.GetJson(JSONurl, JSON, referer, cookie)) {
+						if (hc.GetJson(newJSONurl, JSON, referer, cookie)) {
 							*pconsole << endl << TEXT("Finishing downloading JSON file") << endl;
 							*pconsole << TEXT("JSON file content is: ") << endl;
 							*pconsole << JSON << endl;
@@ -548,6 +551,7 @@ void YoukuWindow::m3u8Thread(const tstring& videoURL, size_t index) {
 							data = JSONobj["data"].object_items();
 							if (data["stream"].is_null()) {
 								*pconsole << TEXT("Failed: Wrong Password!") << endl;
+								popup_diag_psw = true;
 							} else {
 								wrongpwd = false;
 							}
